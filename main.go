@@ -6,13 +6,13 @@ import (
 	"os"
 
 	"github.com/TeaMeow/KitSvc/config"
+	"github.com/TeaMeow/KitSvc/discovery"
 	"github.com/TeaMeow/KitSvc/instrumenting"
 	"github.com/TeaMeow/KitSvc/logging"
 	"github.com/TeaMeow/KitSvc/service"
 
 	"golang.org/x/net/context"
 
-	"github.com/TeaMeow/KitSvc/sd"
 	"github.com/go-kit/kit/log"
 
 	httptransport "github.com/go-kit/kit/transport/http"
@@ -63,7 +63,7 @@ func main() {
 	http.Handle("/count", countHandler)
 	http.Handle("/metrics", stdprometheus.Handler())
 
-	sd.Register(&conf, logger)
+	discovery.Register(&conf, logger)
 
 	logger.Log("msg", "HTTP", "addr", *listen)
 	logger.Log("err", http.ListenAndServe(*listen, nil))
