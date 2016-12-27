@@ -19,9 +19,9 @@ type Service struct {
 }
 
 type Database struct {
-	User, Password, Host, Charset, Loc string
-	Port                               int
-	ParseTime                          bool
+	User, Password, Host, Name, Charset, Loc string
+	Port                                     int
+	ParseTime                                bool
 }
 
 type Prometheus struct {
