@@ -8,41 +8,42 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/TeaMeow/KitSvc/service"
 	"github.com/go-kit/kit/endpoint"
 )
 
-func makeUppercaseEndpoint(svc StringService) endpoint.Endpoint {
+func makeUppercaseEndpoint(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(uppercaseRequest)
+		req := request.(service.UppercaseRequest)
 		v, err := svc.Uppercase(req.S)
 		if err != nil {
-			return uppercaseResponse{v, err.Error()}, nil
+			return service.UppercaseResponse{v, err.Error()}, nil
 		}
-		return uppercaseResponse{v, ""}, nil
+		return service.UppercaseResponse{v, ""}, nil
 	}
 }
 
-func makeLowercaseEndpoint(svc StringService) endpoint.Endpoint {
+func makeLowercaseEndpoint(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(lowercaseRequest)
+		req := request.(service.LowercaseRequest)
 		v, err := svc.Lowercase(req.S)
 		if err != nil {
-			return lowercaseResponse{v, err.Error()}, nil
+			return service.LowercaseResponse{v, err.Error()}, nil
 		}
-		return lowercaseResponse{v, ""}, nil
+		return service.LowercaseResponse{v, ""}, nil
 	}
 }
 
-func makeCountEndpoint(svc StringService) endpoint.Endpoint {
+func makeCountEndpoint(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(countRequest)
+		req := request.(service.CountRequest)
 		v := svc.Count(req.S)
-		return countResponse{v}, nil
+		return service.CountResponse{v}, nil
 	}
 }
 
 func decodeUppercaseRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	var request uppercaseRequest
+	var request service.UppercaseRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		return nil, err
 	}
@@ -50,7 +51,7 @@ func decodeUppercaseRequest(_ context.Context, r *http.Request) (interface{}, er
 }
 
 func decodeLowercaseRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	var request lowercaseRequest
+	var request service.LowercaseRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		return nil, err
 	}
@@ -58,7 +59,7 @@ func decodeLowercaseRequest(_ context.Context, r *http.Request) (interface{}, er
 }
 
 func decodeCountRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	var request countRequest
+	var request service.CountRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		return nil, err
 	}

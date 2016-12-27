@@ -1,0 +1,29 @@
+# Service basic configurations.
+service:
+    name: StringService
+    port: 8080
+
+# The database configurations.
+database:
+    name: service
+    host: 127.0.0.1
+    port: 3306
+    user: root
+    password: root
+    charset: utf8
+    loc: Local
+    parse_time: true
+
+# The configurations for Prometheus, a logging system.
+prometheus:
+    namespace: my_group
+    subsystem: string_service
+
+# The service discovery configurations.
+consul:
+    check:
+        interval: 10s
+        timeout: 1s
+    tags:
+        - string
+        - micro

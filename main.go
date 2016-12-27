@@ -5,14 +5,18 @@ import (
 	"net/http"
 	"os"
 
-	stdprometheus "github.com/prometheus/client_golang/prometheus"
+	"github.com/TeaMeow/KitSvc/config"
+	"github.com/TeaMeow/KitSvc/instrumenting"
+	"github.com/TeaMeow/KitSvc/logging"
+	"github.com/TeaMeow/KitSvc/service"
+
 	"golang.org/x/net/context"
 
+	"github.com/TeaMeow/KitSvc/sd"
 	"github.com/go-kit/kit/log"
-	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	consulsd "github.com/go-kit/kit/sd/consul"
+
 	httptransport "github.com/go-kit/kit/transport/http"
-	consulapi "github.com/hashicorp/consul/api"
+	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
 func main() {
@@ -21,36 +25,19 @@ func main() {
 	)
 	flag.Parse()
 
+	conf := config.Load()
+
 	var logger log.Logger
 	logger = log.NewLogfmtLogger(os.Stderr)
 	logger = log.NewContext(logger).With("listen", *listen).With("caller", log.DefaultCaller)
 
 	ctx := context.Background()
 
-	fieldKeys := []string{"method", "error"}
-	requestCount := kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
-		Namespace: "my_group",
-		Subsystem: "string_service",
-		Name:      "request_count",
-		Help:      "Number of requests received.",
-	}, fieldKeys)
-	requestLatency := kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
-		Namespace: "my_group",
-		Subsystem: "string_service",
-		Name:      "request_latency_microseconds",
-		Help:      "Total duration of requests in microseconds.",
-	}, fieldKeys)
-	countResult := kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
-		Namespace: "my_group",
-		Subsystem: "string_service",
-		Name:      "count_result",
-		Help:      "The result of each count method.",
-	}, []string{})
+	var svc service.Service
 
-	var svc StringService
-	svc = stringService{}
-	svc = loggingMiddleware(logger)(svc)
-	svc = instrumentingMiddleware(requestCount, requestLatency, countResult)(svc)
+	svc = service.Concrete{}
+	svc = logging.CreateMiddleware(logger)(svc)
+	svc = instrumenting.CreateMiddleware(conf)(svc)
 
 	uppercaseHandler := httptransport.NewServer(
 		ctx,
@@ -76,22 +63,8 @@ func main() {
 	http.Handle("/count", countHandler)
 	http.Handle("/metrics", stdprometheus.Handler())
 
-	info := consulapi.AgentServiceRegistration{
-		Name: "stringsvc",
-		Port: 8080,
-		Tags: []string{"string"},
-		Check: &consulapi.AgentServiceCheck{
-			TTL: "1s",
-		},
-	}
-	// DEREGISTRE
-	// DDDDDD
-	// DDD
-	consulConfig := consulapi.DefaultConfig()
-	consulClient, _ := consulapi.NewClient(consulConfig)
-	client := consulsd.NewClient(consulClient)
-	reg := consulsd.NewRegistrar(client, &info, logger)
-	reg.Register()
+	sd.Register(&conf, logger)
+
 	logger.Log("msg", "HTTP", "addr", *listen)
 	logger.Log("err", http.ListenAndServe(*listen, nil))
 }
