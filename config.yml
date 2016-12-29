@@ -1,6 +1,8 @@
 # Service basic configurations.
 service:
     name: StringService
+    url: http://127.0.0.1:8080
+    addr: 127.0.0.1:8080
     port: 8080
 
 # The database configurations.
@@ -16,7 +18,7 @@ database:
 
 #
 nsq:
-    producer: 127.0.0.1:4161
+    producer: 127.0.0.1:4150
     lookups:
         - 127.0.0.1:4161
 
