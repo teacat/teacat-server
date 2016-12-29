@@ -16,6 +16,8 @@ type Context struct {
 
 type Service struct {
 	Name string
+	URL  string
+	Addr string
 	Port int
 }
 
@@ -50,6 +52,8 @@ func Load() Context {
 
 	svc := Service{
 		Name: viper.GetString("service.name"),
+		URL:  viper.GetString("service.url"),
+		Addr: viper.GetString("service.addr"),
 		Port: viper.GetInt("service.port"),
 	}
 	db := Database{
