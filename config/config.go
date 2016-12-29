@@ -11,6 +11,7 @@ type Context struct {
 	Database
 	Prometheus
 	Consul
+	NSQ
 }
 
 type Service struct {
@@ -26,6 +27,11 @@ type Database struct {
 
 type Prometheus struct {
 	Namespace, Subsystem string
+}
+
+type NSQ struct {
+	Producer string
+	Lookups  []string
 }
 
 type Consul struct {
@@ -64,6 +70,10 @@ func Load() Context {
 		CheckTimeout:  viper.GetString("consul.check.timeout"),
 		Tags:          viper.GetStringSlice("consul.tags"),
 	}
+	nsq := NSQ{
+		Producer: viper.GetString("nsq.producer"),
+		Lookups:  viper.GetStringSlice("nsq.lookups"),
+	}
 
-	return Context{Service: svc, Database: db, Prometheus: pt, Consul: cl}
+	return Context{Service: svc, Database: db, Prometheus: pt, Consul: cl, NSQ: nsq}
 }
