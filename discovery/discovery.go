@@ -1,7 +1,8 @@
 package discovery
 
 import (
-	"strconv"
+	"os"
+	"os/signal"
 
 	"github.com/TeaMeow/KitSvc/config"
 	"github.com/go-kit/kit/log"
@@ -16,17 +17,27 @@ func Register(c *config.Context, logger log.Logger) {
 		Port: c.Service.Port,
 		Tags: c.Consul.Tags,
 		Check: &consulapi.AgentServiceCheck{
-			HTTP:     "http://localhost:" + strconv.Itoa(c.Service.Port) + "/health",
+			HTTP:     c.Service.URL + "/health",
 			Interval: c.Consul.CheckInterval,
 			Timeout:  c.Consul.CheckTimeout,
 		},
 	}
-	// DEREGISTRE
-	// DDDDDD
-	// DDD
+
 	apiConfig := consulapi.DefaultConfig()
 	apiClient, _ := consulapi.NewClient(apiConfig)
 	client := consulsd.NewClient(apiClient)
 	reg := consulsd.NewRegistrar(client, &info, logger)
+
+	// Deregister the service when ctrl+c
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, os.Interrupt)
+	go func() {
+		for range ch {
+			reg.Deregister()
+			os.Exit(1)
+		}
+	}()
+
+	// Register the service
 	reg.Register()
 }
