@@ -1,6 +1,10 @@
 package logging
 
-import "time"
+import (
+	"time"
+
+	nsq "github.com/bitly/go-nsq"
+)
 
 // Uppercase 會紀錄 Uppercase 函式的相關資訊。
 func (mw Middleware) Uppercase(s string) (output string, err error) {
@@ -46,5 +50,18 @@ func (mw Middleware) Count(s string) (n int) {
 	}(time.Now())
 
 	n = mw.Service.Count(s)
+	return
+}
+
+func (mw Middleware) Test(msg *nsq.Message) {
+	defer func(begin time.Time) {
+		_ = mw.Logger.Log(
+			"method", "test",
+			"input", msg.Body,
+			"took", time.Since(begin),
+		)
+	}(time.Now())
+
+	mw.Service.Test(msg)
 	return
 }
