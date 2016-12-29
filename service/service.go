@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	nsq "github.com/bitly/go-nsq"
@@ -17,6 +18,7 @@ type Service interface {
 	Uppercase(string) (string, error)
 	Lowercase(string) (string, error)
 	Count(string) int
+	Test(*nsq.Message)
 }
 
 // stringService 概括了字串服務所可用的函式。
@@ -28,9 +30,9 @@ type Concrete struct {
 type Middleware func(Service) Service
 
 // Uppercase 將傳入的字串轉換為大寫。
-func (Concrete) Uppercase(s string) (string, error) {
+func (c Concrete) Uppercase(s string) (string, error) {
 
-	//c.Message.Publish("write_test", []byte("test"))
+	c.Message.Publish("new_user", []byte("test"))
 
 	if s == "" {
 		return "", ErrEmpty
@@ -53,7 +55,6 @@ func (Concrete) Count(s string) int {
 	return len(s)
 }
 
-//
-/*func (Concrete) Test(msg *nsq.Message) {
-	string(msg)
-}*/
+func (Concrete) Test(msg *nsq.Message) {
+	fmt.Println(msg)
+}

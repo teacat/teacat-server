@@ -16,7 +16,6 @@ type Concrete struct {
 func Create(c config.Context, logger log.Logger) Concrete {
 
 	prod, err := nsq.NewProducer(c.NSQ.Producer, nsq.NewConfig())
-	logger.Log("module", "nsq", "msg", "Creating the message producer.", "addr", c.NSQ.Producer)
 	if err != nil {
 		logger.Log("module", "nsq", "msg", err)
 	}
@@ -24,14 +23,20 @@ func Create(c config.Context, logger log.Logger) Concrete {
 	return Concrete{Producer: prod, Config: c}
 }
 
-func (c Concrete) Handle(topic string, ch string, fn nsq.HandlerFunc) {
+type HandlerFunc func(*nsq.Message)
+
+func (c Concrete) Handle(topic string, ch string, fn HandlerFunc) {
 
 	q, err := nsq.NewConsumer(topic, ch, nsq.NewConfig())
 	if err != nil {
 		c.Logger.Log("module", "nsq", "msg", err)
 	}
 
-	q.AddHandler(fn)
+	q.AddHandler(nsq.HandlerFunc(func(msg *nsq.Message) error {
+		fn(msg)
+
+		return nil
+	}))
 
 	if err := q.ConnectToNSQLookupds(c.Config.NSQ.Lookups); err != nil {
 		c.Logger.Log("module", "nsq", "msg", err)
