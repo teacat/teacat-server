@@ -14,6 +14,12 @@ database:
     loc: Local
     parse_time: true
 
+#
+nsq:
+    producer: 127.0.0.1:4161
+    lookups:
+        - 127.0.0.1:4161
+
 # The configurations for Prometheus, a logging system.
 prometheus:
     namespace: my_group
