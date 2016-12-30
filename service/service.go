@@ -1,60 +1,66 @@
 package service
 
 import (
-	"errors"
-	"fmt"
-	"strings"
+	"encoding/json"
+	"net/http"
 
-	nsq "github.com/bitly/go-nsq"
+	"golang.org/x/net/context"
 )
 
-var (
-	// ErrEmpty 會在傳入一個空字串時被觸發。
-	ErrEmpty = errors.New("字串是空的。")
-)
-
-// StringService 是基於字串的服務。
-type Service interface {
-	Uppercase(string) (string, error)
-	Lowercase(string) (string, error)
-	Count(string) int
-	Test(*nsq.Message)
+type Err struct {
+	Message error
+	Payload interface{}
 }
 
-// stringService 概括了字串服務所可用的函式。
-type Concrete struct {
-	Message *nsq.Producer
+func (e Err) Error() string {
+	return e.Message.Error()
 }
 
-// ServiceMiddleware 是處理 StringService 的中介層。
-type Middleware func(Service) Service
+type ErrInfo struct {
+	Text   error
+	Status int
+	Code   string
+}
 
-// Uppercase 將傳入的字串轉換為大寫。
-func (c Concrete) Uppercase(s string) (string, error) {
+func (e ErrInfo) Error() string {
+	return e.Text.Error()
+}
 
-	c.Message.Publish("new_user", []byte("test"))
+type response struct {
+	Status  string      `json:"status"`
+	Code    string      `json:"code"`
+	Message string      `json:"message"`
+	Payload interface{} `json:"payload"`
+}
 
-	if s == "" {
-		return "", ErrEmpty
+func errorEncoder(c context.Context, err error, w http.ResponseWriter) {
+
+	status, msg, code, payload :=
+		err.(Err).Message.(ErrInfo).Status,
+		err.(Err).Message.(ErrInfo).Text.Error(),
+		err.(Err).Message.(ErrInfo).Code,
+		err.(Err).Payload
+
+	if status == 0 {
+		status = http.StatusInternalServerError
 	}
 
-	return strings.ToUpper(s), nil
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(response{
+		Status:  "error",
+		Code:    code,
+		Message: msg,
+		Payload: payload,
+	})
 }
 
-// Lowercase 將傳入的字串轉換為小寫。
-func (Concrete) Lowercase(s string) (string, error) {
-	if s == "" {
-		return "", ErrEmpty
-	}
-
-	return strings.ToLower(s), nil
-}
-
-// Count 計算傳入的字串長度。
-func (Concrete) Count(s string) int {
-	return len(s)
-}
-
-func (Concrete) Test(msg *nsq.Message) {
-	fmt.Println(msg)
+func encodeResponse(_ context.Context, w http.ResponseWriter, resp interface{}) error {
+	w.Header().Set("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(response{
+		Status:  "success",
+		Code:    "success",
+		Message: "",
+		Payload: resp,
+	})
 }

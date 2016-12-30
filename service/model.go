@@ -5,8 +5,7 @@ type UppercaseRequest struct {
 }
 
 type UppercaseResponse struct {
-	V   string `json:"v"`
-	Err string `json:"err,omitempty"`
+	V string `json:"v"`
 }
 
 type LowercaseRequest struct {
@@ -14,8 +13,7 @@ type LowercaseRequest struct {
 }
 
 type LowercaseResponse struct {
-	V   string `json:"v"`
-	Err string `json:"err,omitempty"`
+	V string `json:"v"`
 }
 
 type CountRequest struct {
