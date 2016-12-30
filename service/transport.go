@@ -20,17 +20,6 @@ func makeUppercaseEndpoint(svc Service) endpoint.Endpoint {
 	}
 }
 
-func makeLowercaseEndpoint(svc Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(LowercaseRequest)
-		v, err := svc.Lowercase(req.S)
-		if err != nil {
-			return LowercaseResponse{v}, err
-		}
-		return LowercaseResponse{v}, nil
-	}
-}
-
 func makeCountEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(CountRequest)
@@ -41,14 +30,6 @@ func makeCountEndpoint(svc Service) endpoint.Endpoint {
 
 func decodeUppercaseRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	var request UppercaseRequest
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		return nil, err
-	}
-	return request, nil
-}
-
-func decodeLowercaseRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	var request LowercaseRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		return nil, err
 	}

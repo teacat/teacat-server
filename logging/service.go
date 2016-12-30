@@ -22,22 +22,6 @@ func (mw Middleware) Uppercase(s string) (output string, err error) {
 	return
 }
 
-// Lowercase 會紀錄 Lowercase 函式的相關資訊。
-func (mw Middleware) Lowercase(s string) (output string, err error) {
-	defer func(begin time.Time) {
-		_ = mw.Logger.Log(
-			"method", "lowercase",
-			"input", s,
-			"output", output,
-			"err", err,
-			"took", time.Since(begin),
-		)
-	}(time.Now())
-
-	output, err = mw.Service.Lowercase(s)
-	return
-}
-
 // Count 會紀錄 Count 函式的相關資訊。
 func (mw Middleware) Count(s string) (n int) {
 	defer func(begin time.Time) {

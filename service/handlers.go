@@ -14,29 +14,9 @@ func SetHandlers(svc Service) {
 		httptransport.ServerErrorEncoder(errorEncoder),
 	}
 
-	uppercaseHandler := httptransport.NewServer(
-		ctx,
-		makeUppercaseEndpoint(svc),
-		decodeUppercaseRequest,
-		encodeResponse,
-		options...,
-	)
-	lowercaseHandler := httptransport.NewServer(
-		ctx,
-		makeLowercaseEndpoint(svc),
-		decodeLowercaseRequest,
-		encodeResponse,
-		options...,
-	)
-	countHandler := httptransport.NewServer(
-		ctx,
-		makeCountEndpoint(svc),
-		decodeCountRequest,
-		encodeResponse,
-		options...,
-	)
+	uppercaseHandler := httptransport.NewServer(ctx, makeUppercaseEndpoint(svc), decodeUppercaseRequest, encodeResponse, options...)
+	countHandler := httptransport.NewServer(ctx, makeCountEndpoint(svc), decodeCountRequest, encodeResponse, options...)
 
-	http.Handle("/lowercase", lowercaseHandler)
 	http.Handle("/uppercase", uppercaseHandler)
 	http.Handle("/count", countHandler)
 	http.Handle("/metrics", stdprometheus.Handler())
