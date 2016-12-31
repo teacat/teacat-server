@@ -4,6 +4,8 @@ service:
     url: http://127.0.0.1:8080
     addr: 127.0.0.1:8080
     port: 8080
+    usage: Operations about the string.
+    version: 0.0.1
 
 # The database configurations.
 database:
