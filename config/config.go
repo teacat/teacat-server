@@ -42,9 +42,9 @@ type Consul struct {
 	Tags          []string
 }
 
-func Load() Context {
+func Load(path string) Context {
 	viper.SetConfigName("config")
-	viper.AddConfigPath("./")
+	viper.AddConfigPath(path)
 
 	if err := viper.ReadInConfig(); err != nil {
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))
