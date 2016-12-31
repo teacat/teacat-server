@@ -9,6 +9,22 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
+type UppercaseRequest struct {
+	S string `json:"s"`
+}
+
+type UppercaseResponse struct {
+	V string `json:"v"`
+}
+
+type CountRequest struct {
+	S string `json:"s"`
+}
+
+type CountResponse struct {
+	V int `json:"v"`
+}
+
 func makeUppercaseEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(UppercaseRequest)

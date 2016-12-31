@@ -1,25 +1,17 @@
 package service
 
-type UppercaseRequest struct {
-	S string `json:"s"`
+import "strings"
+
+func (m Model) ToUpper(s string) (string, error) {
+	if s == "" {
+		return "", Err{
+			Message: ErrEmpty,
+		}
+	}
+
+	return strings.ToUpper(s), nil
 }
 
-type UppercaseResponse struct {
-	V string `json:"v"`
-}
-
-type LowercaseRequest struct {
-	S string `json:"s"`
-}
-
-type LowercaseResponse struct {
-	V string `json:"v"`
-}
-
-type CountRequest struct {
-	S string `json:"s"`
-}
-
-type CountResponse struct {
-	V int `json:"v"`
+func (m Model) Count(s string) int {
+	return len(s)
 }

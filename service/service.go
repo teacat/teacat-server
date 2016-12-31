@@ -4,8 +4,24 @@ import (
 	"encoding/json"
 	"net/http"
 
+	nsq "github.com/bitly/go-nsq"
+	"github.com/jinzhu/gorm"
+
 	"golang.org/x/net/context"
 )
+
+// stringService 概括了字串服務所可用的函式。
+type Concrete struct {
+	Message *nsq.Producer
+	Model
+}
+
+type Model struct {
+	*gorm.DB
+}
+
+// ServiceMiddleware 是處理 StringService 的中介層。
+type Middleware func(Service) Service
 
 type Err struct {
 	Message error
