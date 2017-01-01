@@ -13,19 +13,21 @@
 
 ## 主要結構
 
-下列結構中*不重要的檔案都被忽略*了。
+下列結構中*將會修改到的檔案都被標記星號（*）*了。
 
 ```js
 KitSvc
 ├── service
-│  ├── config.go           // 
+│  ├── config.go
 │  ├── *database.go        // 資料庫存取
+│  ├── dicovery.go
+│  ├── *handlers.go        // 路由處理
 │  ├── *instrumenting.go   // 效能測量層
 │  ├── *logging.go         // 紀錄層
-│  ├── main.go             // 
-│  ├── *messaging.go       // 訊息監聽、處理層
+│  ├── main.go
+│  ├── messaging.go
 │  ├── *model.go           // 資料、邏輯處理
-│  ├── *service.go         // 
+│  ├── *service.go         // 主服務功能
 │  └── *transport.go       // 轉繼層和進入點
 └── *config.yml            // 設定檔案
 ```
