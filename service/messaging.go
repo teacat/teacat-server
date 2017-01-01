@@ -7,23 +7,6 @@ import (
 	nsq "github.com/bitly/go-nsq"
 )
 
-func setMessageHandlers(svc Service) []messageHandler {
-
-	return []messageHandler{
-		{
-			topic:   "new_user",
-			channel: "string",
-			handler: svc.Test,
-		},
-	}
-}
-
-//
-//
-//
-//
-//
-
 type messageHandlerFunc func(*nsq.Message)
 
 type messageHandler struct {

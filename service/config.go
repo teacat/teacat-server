@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// loadConfig loads the configurations.
 func loadConfig(path string) {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(path)

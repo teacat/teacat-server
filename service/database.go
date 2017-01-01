@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// createDatabase creates the database connection.
 func createDatabase() *gorm.DB {
 
 	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=%s&loc=%s",
@@ -24,6 +25,7 @@ func createDatabase() *gorm.DB {
 	if err != nil {
 		panic(err)
 	}
+
 	defer db.Close()
 
 	return db

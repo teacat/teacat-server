@@ -11,6 +11,15 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Instrumenting function measures the performance of the operations of the service.
+//
+// Let's say that you have a `Uppercase` operation,
+// then you would have to create a instrumenting function for the `Uppercase` operation.
+//
+// Create the instrumenting functions with the following format:
+//     func (mw InstrumentingMiddleware)...
+
+// Uppercase records the instrument about the Uppercase function of the service.
 func (mw InstrumentingMiddleware) Uppercase(s string) (output string, err error) {
 	defer func(begin time.Time) {
 		lvs := []string{"method", "uppercase", "error", fmt.Sprint(err != nil)}
@@ -22,6 +31,7 @@ func (mw InstrumentingMiddleware) Uppercase(s string) (output string, err error)
 	return
 }
 
+// Count records the instrument about the Count function of the service.
 func (mw InstrumentingMiddleware) Count(s string) (n int) {
 	defer func(begin time.Time) {
 		lvs := []string{"method", "count", "error", "false"}
@@ -34,6 +44,7 @@ func (mw InstrumentingMiddleware) Count(s string) (n int) {
 	return
 }
 
+// Test records the instrument about the Test function of the service.
 func (mw InstrumentingMiddleware) Test(msg *nsq.Message) {
 	defer func(begin time.Time) {
 		lvs := []string{"method", "test", "error", "false"}
@@ -45,12 +56,13 @@ func (mw InstrumentingMiddleware) Test(msg *nsq.Message) {
 	return
 }
 
+// The functions, structs down below are the core methods,
+// you shouldn't edit them until you know what you're doing,
+// or you understand how KitSvc works.
 //
-//
-//
-//
-//
+// Or if you are brave enough ;)
 
+// InstrumentingMiddleware represents a middleware of the instrumenting.
 type InstrumentingMiddleware struct {
 	requestCount   metrics.Counter
 	requestLatency metrics.Histogram
@@ -58,10 +70,12 @@ type InstrumentingMiddleware struct {
 	Service
 }
 
-func CreateInstruMiddleware() ServiceMiddleware {
+// createInstruMiddleware creates the instrumenting middleware.
+func createInstruMiddleware() ServiceMiddleware {
 
 	fieldKeys := []string{"method", "error"}
 
+	// Number of requests received.
 	requestCount := kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
 		Namespace: viper.GetString("prometheus.namespace"),
 		Subsystem: viper.GetString("prometheus.subsystem"),
@@ -69,6 +83,7 @@ func CreateInstruMiddleware() ServiceMiddleware {
 		Help:      "Number of requests received.",
 	}, fieldKeys)
 
+	// Total duration of requests in microseconds.
 	requestLatency := kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
 		Namespace: viper.GetString("prometheus.namespace"),
 		Subsystem: viper.GetString("prometheus.subsystem"),
@@ -76,6 +91,7 @@ func CreateInstruMiddleware() ServiceMiddleware {
 		Help:      "Total duration of requests in microseconds.",
 	}, fieldKeys)
 
+	// The result of each count method.
 	countResult := kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
 		Namespace: viper.GetString("prometheus.namespace"),
 		Subsystem: viper.GetString("prometheus.subsystem"),

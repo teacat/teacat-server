@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// registerService register the service to the service discovery server(consul).
 func registerService(logger log.Logger) {
 
 	info := consulapi.AgentServiceRegistration{
@@ -28,7 +29,7 @@ func registerService(logger log.Logger) {
 	client := consulsd.NewClient(apiClient)
 	reg := consulsd.NewRegistrar(client, &info, logger)
 
-	// Deregister the service when ctrl+c
+	// Deregister the service when exiting the program.
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
 	go func() {
@@ -38,6 +39,6 @@ func registerService(logger log.Logger) {
 		}
 	}()
 
-	// Register the service
+	// Register the service.
 	reg.Register()
 }

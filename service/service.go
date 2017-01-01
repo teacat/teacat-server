@@ -11,8 +11,10 @@ import (
 	nsq "github.com/bitly/go-nsq"
 )
 
+// Error codes returned by failures
 var (
-	// ErrEmpty 會在傳入一個空字串時被觸發。
+
+	// ErrEmpty will returned if the string is empty.
 	ErrEmpty = ErrInfo{
 		Text:   errors.New("The string is empty."),
 		Status: http.StatusBadRequest,
@@ -20,7 +22,7 @@ var (
 	}
 )
 
-// StringService 是基於字串的服務。
+// Service represents the operations of the servicer can do.
 type Service interface {
 	Uppercase(string) (string, error)
 	Count(string) int
@@ -32,12 +34,13 @@ type service struct {
 	Model
 }
 
+// ServiceMiddleware is a chainable behavior modifier for Service.
 type ServiceMiddleware func(Service) Service
 
-// Uppercase 將傳入的字串轉換為大寫。
+// Uppercase converts the string to uppercase.
 func (svc service) Uppercase(s string) (string, error) {
 
-	//c.Message.Publish("new_user", []byte("test"))
+	//svc.Message.Publish("new_user", []byte("test"))
 
 	res, err := svc.Model.ToUpper(s)
 	if err != nil {
@@ -47,7 +50,7 @@ func (svc service) Uppercase(s string) (string, error) {
 	return res, nil
 }
 
-// Count 計算傳入的字串長度。
+// Count counts the length of the string.
 func (svc service) Count(s string) int {
 	return svc.Model.Count(s)
 }
