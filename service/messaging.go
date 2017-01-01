@@ -1,0 +1,66 @@
+package main
+
+import (
+	"github.com/go-kit/kit/log"
+	"github.com/spf13/viper"
+
+	nsq "github.com/bitly/go-nsq"
+)
+
+func setMessageHandlers(svc Service) []messageHandler {
+
+	return []messageHandler{
+		{
+			topic:   "new_user",
+			channel: "string",
+			handler: svc.Test,
+		},
+	}
+}
+
+//
+//
+//
+//
+//
+
+type messageHandlerFunc func(*nsq.Message)
+
+type messageHandler struct {
+	topic   string
+	channel string
+	handler messageHandlerFunc
+}
+
+func createMessage(l log.Logger) *nsq.Producer {
+	prod, err := nsq.NewProducer(viper.GetString("nsq.producer"), nsq.NewConfig())
+	if err != nil {
+		l.Log("module", "nsq", "msg", err)
+	}
+
+	return prod
+}
+
+func messageSubscribe(topic string, ch string, fn messageHandlerFunc) {
+
+	q, err := nsq.NewConsumer(topic, ch, nsq.NewConfig())
+	if err != nil {
+		panic(err)
+	}
+
+	q.AddHandler(nsq.HandlerFunc(func(msg *nsq.Message) error {
+		fn(msg)
+
+		return nil
+	}))
+
+	if err := q.ConnectToNSQLookupds(viper.GetStringSlice("nsq.lookups")); err != nil {
+		panic(err)
+	}
+}
+
+func setMessageSubscription(handlers []messageHandler) {
+	for _, v := range handlers {
+		messageSubscribe(v.topic, v.channel, v.handler)
+	}
+}

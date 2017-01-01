@@ -1,3 +1,44 @@
+<p align="center">
+  <img src="https://cloud.githubusercontent.com/assets/7308718/21562106/97c9ad20-ceb0-11e6-960a-664fa507bd68.png" alt="kitsvc" width="60">
+  <br><br><strong>KitSvc</strong> 是一個 Go 的單個微服務初始包 <br>提供了 Go kit、Consul、Prometheus 相關模塊和 Gorm 與 NSQ。（<a href="https://github.com/TeaMeow/KitGate">依賴 KitGate</a>）
+</p>
+
+## 特色
+
+- Go kit
+- 具獨立性的微服務架構
+- 透過 Gorm 與資料庫連線
+- Consul、Prometheus、NSQ
+- 內建預設範例
+
+## 主要結構
+
+下列結構中*不重要的檔案都被忽略*了。
+
+```js
+KitSvc
+├── service
+│  ├── config.go           // 
+│  ├── *database.go        // 資料庫存取
+│  ├── *instrumenting.go   // 效能測量層
+│  ├── *logging.go         // 紀錄層
+│  ├── main.go             // 
+│  ├── *messaging.go       // 訊息監聽、處理層
+│  ├── *model.go           // 資料、邏輯處理
+│  ├── *service.go         // 
+│  └── *transport.go       // 轉繼層和進入點
+└── *config.yml            // 設定檔案
+```
+
+## 依賴性
+
+KitSvc 依賴下列服務，請確保你有安裝。
+
+* **[Consul](https://www.consul.io/)**
+* **[Prometheus](https://prometheus.io/)**
+* **[NSQ](http://nsq.io/)**
+* **[MySQL](https://www.mysql.com/downloads/)（或 [MSSQL](https://www.microsoft.com/zh-tw/server-cloud/products/sql-server/overview.aspx)、[SQLite](https://sqlite.org/)、[PostgreSQL](https://www.postgresql.org/)）**
+
 ## 從這開始
 
 請注意，KitSvc 並不能透過 `go run` 直接執行，你必須先透過 `go build` 編譯後才能執行。執行前請先確認 NSQ 與 Consul 皆有啟動。
@@ -72,3 +113,45 @@ $ ./KitSvc
 `service/handlers.go`
 
 ### 紀錄
+
+`logging/service.go`
+
+### 效能測量
+
+`instrumenting/instrumenting.go`
+
+## 單元測試
+
+## 還請參閱
+
+這裡整理了一些也許能夠協助你理解微服務如何運作的文件。
+
+**正體中文**
+
+[一個基於 Golang 的基本 Go kit 微服務範例](https://yami.io/go-kit-example/)
+
+[1. 什麼是微服務？——Golang 微服務實作教學與範例](https://yami.io/golang-microservice-1/)
+
+[2. 微服務概念與溝通——Golang 微服務實作教學與範例](https://yami.io/golang-microservice-2/)
+
+[3. 相關工具介紹與安裝——Golang 微服務實作教學與範例](https://yami.io/golang-microservice-3/)
+
+**官方範例**
+
+[go-kit/stringsvc3](https://github.com/go-kit/kit/tree/master/examples/stringsvc3)
+
+[go-examples/nsq](https://github.com/ibmendoza/go-examples/tree/master/nsq)
+
+**原文參考**
+
+[An Introduction to Microservices, Part 1](https://auth0.com/blog/an-introduction-to-microservices-part-1/)
+
+[API Gateway. An Introduction to Microservices, Part 2](https://auth0.com/blog/an-introduction-to-microservices-part-2-API-gateway/)
+
+[An Introduction to Microservices, Part 3: The Service Registry](https://auth0.com/blog/an-introduction-to-microservices-part-3-the-service-registry/)
+
+[Intro to Microservices, Part 4: Dependencies and Data Sharing](https://auth0.com/blog/introduction-to-microservices-part-4-dependencies/)
+
+# License
+
+MIT &copy; [Yami Odymel](https://github.com/YamiOdymel)

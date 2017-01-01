@@ -1,25 +1,25 @@
-package discovery
+package main
 
 import (
 	"os"
 	"os/signal"
 
-	"github.com/TeaMeow/KitSvc/config"
 	"github.com/go-kit/kit/log"
 	consulsd "github.com/go-kit/kit/sd/consul"
 	consulapi "github.com/hashicorp/consul/api"
+	"github.com/spf13/viper"
 )
 
-func Register(c *config.Context, logger log.Logger) {
+func registerService(logger log.Logger) {
 
 	info := consulapi.AgentServiceRegistration{
-		Name: c.Service.Name,
-		Port: c.Service.Port,
-		Tags: c.Consul.Tags,
+		Name: viper.GetString("service.name"),
+		Port: viper.GetInt("service.port"),
+		Tags: viper.GetStringSlice("service.tags"),
 		Check: &consulapi.AgentServiceCheck{
-			HTTP:     c.Service.URL + "/health",
-			Interval: c.Consul.CheckInterval,
-			Timeout:  c.Consul.CheckTimeout,
+			HTTP:     viper.GetString("service.url") + "/health",
+			Interval: viper.GetString("consul.check.interval"),
+			Timeout:  viper.GetString("consul.check.timeout"),
 		},
 	}
 

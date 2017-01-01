@@ -1,27 +1,60 @@
-package service
+package main
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 
-	nsq "github.com/bitly/go-nsq"
-	"github.com/jinzhu/gorm"
-
 	"golang.org/x/net/context"
+
+	nsq "github.com/bitly/go-nsq"
 )
 
-// stringService 概括了字串服務所可用的函式。
-type Concrete struct {
+var (
+	// ErrEmpty 會在傳入一個空字串時被觸發。
+	ErrEmpty = ErrInfo{
+		Text:   errors.New("The string is empty."),
+		Status: http.StatusBadRequest,
+		Code:   "str_empty",
+	}
+)
+
+// StringService 是基於字串的服務。
+type Service interface {
+	Uppercase(string) (string, error)
+	Count(string) int
+	Test(*nsq.Message)
+}
+
+type service struct {
 	Message *nsq.Producer
 	Model
 }
 
-type Model struct {
-	*gorm.DB
+type ServiceMiddleware func(Service) Service
+
+// Uppercase 將傳入的字串轉換為大寫。
+func (svc service) Uppercase(s string) (string, error) {
+
+	//c.Message.Publish("new_user", []byte("test"))
+
+	res, err := svc.Model.ToUpper(s)
+	if err != nil {
+		return "", err
+	}
+
+	return res, nil
 }
 
-// ServiceMiddleware 是處理 StringService 的中介層。
-type Middleware func(Service) Service
+// Count 計算傳入的字串長度。
+func (svc service) Count(s string) int {
+	return svc.Model.Count(s)
+}
+
+func (service) Test(msg *nsq.Message) {
+	fmt.Println(msg)
+}
 
 type Err struct {
 	Message error

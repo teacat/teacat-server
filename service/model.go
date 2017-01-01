@@ -1,6 +1,18 @@
-package service
+package main
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/jinzhu/gorm"
+)
+
+type Model struct {
+	DB *gorm.DB
+}
+
+func createModel(db *gorm.DB) Model {
+	return Model{db}
+}
 
 func (m Model) ToUpper(s string) (string, error) {
 	if s == "" {
