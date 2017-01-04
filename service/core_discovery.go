@@ -3,24 +3,26 @@ package main
 import (
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 
 	"github.com/go-kit/kit/log"
 	consulsd "github.com/go-kit/kit/sd/consul"
 	consulapi "github.com/hashicorp/consul/api"
-	"github.com/spf13/viper"
 )
 
 // registerService register the service to the service discovery server(consul).
 func registerService(logger log.Logger) {
+	p, _ := strconv.Atoi(os.Getenv("KITSVC_PORT"))
 
 	info := consulapi.AgentServiceRegistration{
-		Name: viper.GetString("service.name"),
-		Port: viper.GetInt("service.port"),
-		Tags: viper.GetStringSlice("service.tags"),
+		Name: os.Getenv("KITSVC_NAME"),
+		Port: p,
+		Tags: strings.Split(os.Getenv("KITSVC_CONSUL_TAGS"), ","),
 		Check: &consulapi.AgentServiceCheck{
-			HTTP:     viper.GetString("service.url") + "/health",
-			Interval: viper.GetString("consul.check.interval"),
-			Timeout:  viper.GetString("consul.check.timeout"),
+			HTTP:     os.Getenv("KITSVC_URL") + "/health",
+			Interval: os.Getenv("KITSVC_CONSUL_CHECK_INTERVAL"),
+			Timeout:  os.Getenv("KITSVC_CONSUL_CHECK_TIMEOUT"),
 		},
 	}
 

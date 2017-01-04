@@ -2,24 +2,22 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
-	"github.com/spf13/viper"
 )
 
 // createDatabase creates the database connection.
 func createDatabase(resetDB *bool) *gorm.DB {
-
-	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=%s&loc=%s",
-		viper.GetString("database.user"),
-		viper.GetString("database.password"),
-		viper.GetString("database.host"),
-		viper.GetInt("database.port"),
-		viper.GetString("database.name"),
-		viper.GetString("database.charset"),
-		viper.GetString("database.parse_time"),
-		viper.GetString("database.loc"),
+	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=%s&parseTime=%s&loc=%s",
+		os.Getenv("KITSVC_DATABASE_USER"),
+		os.Getenv("KITSVC_DATABASE_PASSWORD"),
+		os.Getenv("KITSVC_DATABASE_HOST"),
+		os.Getenv("KITSVC_DATABASE_NAME"),
+		os.Getenv("KITSVC_DATABASE_CHARSET"),
+		os.Getenv("KITSVC_DATABASE_PARSE_TIME"),
+		os.Getenv("KITSVC_DATABASE_LOC"),
 	))
 
 	if err != nil {

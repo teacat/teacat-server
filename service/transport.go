@@ -27,6 +27,7 @@ type countResponse struct {
 
 func makeUppercaseEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
+
 		req := request.(uppercaseRequest)
 		v, err := svc.Uppercase(req.S)
 		if err != nil {

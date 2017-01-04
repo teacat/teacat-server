@@ -1,8 +1,10 @@
 package main
 
 import (
+	"os"
+	"strings"
+
 	"github.com/go-kit/kit/log"
-	"github.com/spf13/viper"
 
 	nsq "github.com/bitly/go-nsq"
 )
@@ -16,7 +18,7 @@ type messageHandler struct {
 }
 
 func createMessage(l log.Logger) *nsq.Producer {
-	prod, err := nsq.NewProducer(viper.GetString("nsq.producer"), nsq.NewConfig())
+	prod, err := nsq.NewProducer(os.Getenv("KITSVC_NSQ_PRODUCER"), nsq.NewConfig())
 	if err != nil {
 		l.Log("module", "nsq", "msg", err)
 	}
@@ -37,7 +39,7 @@ func messageSubscribe(topic string, ch string, fn messageHandlerFunc) {
 		return nil
 	}))
 
-	if err := q.ConnectToNSQLookupds(viper.GetStringSlice("nsq.lookups")); err != nil {
+	if err := q.ConnectToNSQLookupds(strings.Split(os.Getenv("KITSVC_NSQ_LOOKUPS"), ",")); err != nil {
 		panic(err)
 	}
 }

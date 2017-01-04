@@ -1,10 +1,11 @@
 package main
 
 import (
+	"os"
+
 	"github.com/go-kit/kit/metrics"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	"github.com/spf13/viper"
 )
 
 // The functions, structs down below are the core methods,
@@ -28,24 +29,24 @@ func createInstruMiddleware() ServiceMiddleware {
 
 	// Number of requests received.
 	requestCount := kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
-		Namespace: viper.GetString("prometheus.namespace"),
-		Subsystem: viper.GetString("prometheus.subsystem"),
+		Namespace: os.Getenv("KITSVC_PROMETHEUS_NAMESPACE"),
+		Subsystem: os.Getenv("KITSVC_PROMETHEUS_SUBSYSTEM"),
 		Name:      "request_count",
 		Help:      "Number of requests received.",
 	}, fieldKeys)
 
 	// Total duration of requests in microseconds.
 	requestLatency := kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
-		Namespace: viper.GetString("prometheus.namespace"),
-		Subsystem: viper.GetString("prometheus.subsystem"),
+		Namespace: os.Getenv("KITSVC_PROMETHEUS_NAMESPACE"),
+		Subsystem: os.Getenv("KITSVC_PROMETHEUS_SUBSYSTEM"),
 		Name:      "request_latency_microseconds",
 		Help:      "Total duration of requests in microseconds.",
 	}, fieldKeys)
 
 	// The result of each count method.
 	countResult := kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
-		Namespace: viper.GetString("prometheus.namespace"),
-		Subsystem: viper.GetString("prometheus.subsystem"),
+		Namespace: os.Getenv("KITSVC_PROMETHEUS_NAMESPACE"),
+		Subsystem: os.Getenv("KITSVC_PROMETHEUS_SUBSYSTEM"),
 		Name:      "count_result",
 		Help:      "The result of each count method.",
 	}, []string{})
