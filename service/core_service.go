@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"golang.org/x/net/context"
-
 	nsq "github.com/bitly/go-nsq"
+	kitlog "github.com/go-kit/kit/log"
+	httptransport "github.com/go-kit/kit/transport/http"
+	"golang.org/x/net/context"
 )
 
 // The functions, structs down below are the core methods,
@@ -50,15 +51,25 @@ type response struct {
 }
 
 func errorEncoder(c context.Context, err error, w http.ResponseWriter) {
+	var status int
+	var code string
+	var msg string
+	var payload interface{}
 
-	status, msg, code, payload :=
-		err.(Err).Message.(ErrInfo).Status,
-		err.(Err).Message.(ErrInfo).Text.Error(),
-		err.(Err).Message.(ErrInfo).Code,
-		err.(Err).Payload
+	switch err.(type) {
+	case Err:
+		status, msg, code, payload =
+			err.(Err).Message.(ErrInfo).Status,
+			err.(Err).Message.(ErrInfo).Text.Error(),
+			err.(Err).Message.(ErrInfo).Code,
+			err.(Err).Payload
 
-	if status == 0 {
-		status = http.StatusInternalServerError
+	default:
+		status, msg, code, payload =
+			http.StatusBadRequest,
+			"Cannot parse the JSON content.",
+			"error",
+			nil
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -79,4 +90,34 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, resp interface{}) 
 		Message: "",
 		Payload: resp,
 	})
+}
+
+// createService creates the main service by setting the handlers and preparing the middlewares.
+func createService(logger kitlog.Logger, msg *nsq.Producer, model Model) (Service, context.Context) {
+
+	var svc Service
+	svc = service{Message: msg, Model: model}
+	svc = createLoggingMiddleware(logger)(svc)
+	svc = createInstruMiddleware()(svc)
+
+	ctx := context.Background()
+	options := []httptransport.ServerOption{
+		httptransport.ServerErrorEncoder(errorEncoder),
+	}
+
+	setServiceSubscription(serviceHandlers(ctx, options, svc))
+	setMessageSubscription(messageHandlers(svc))
+
+	return svc, ctx
+}
+
+type serviceHandler struct {
+	pattern string
+	handler http.Handler
+}
+
+func setServiceSubscription(handlers []serviceHandler) {
+	for _, v := range handlers {
+		http.Handle(v.pattern, v.handler)
+	}
 }
