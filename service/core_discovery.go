@@ -20,7 +20,7 @@ func registerService(logger log.Logger) {
 		Port: p,
 		Tags: strings.Split(os.Getenv("KITSVC_CONSUL_TAGS"), ","),
 		Check: &consulapi.AgentServiceCheck{
-			HTTP:     os.Getenv("KITSVC_URL") + "/health",
+			HTTP:     os.Getenv("KITSVC_URL") + "/sd_health",
 			Interval: os.Getenv("KITSVC_CONSUL_CHECK_INTERVAL"),
 			Timeout:  os.Getenv("KITSVC_CONSUL_CHECK_TIMEOUT"),
 		},
