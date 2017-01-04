@@ -25,6 +25,21 @@ type countResponse struct {
 	V int `json:"v"`
 }
 
+type publishMessageRequest struct {
+	S string `json:"s"`
+}
+
+type publishMessageResponse struct {
+	V string `json:"v"`
+}
+
+type sdRequest struct {
+}
+
+type sdResponse struct {
+	P string `json:"pong"`
+}
+
 func makeUppercaseEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 
@@ -45,6 +60,21 @@ func makeCountEndpoint(svc Service) endpoint.Endpoint {
 	}
 }
 
+func makePublishMessageEndpoint(svc Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(publishMessageRequest)
+		svc.PublishMessage(req.S)
+		return publishMessageResponse{req.S}, nil
+	}
+}
+
+func makeServiceDiscoveryEndpoint(svc Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		svc.ServiceDiscoveryCheck()
+		return sdResponse{"pong"}, nil
+	}
+}
+
 func decodeUppercaseRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	var request uppercaseRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -59,4 +89,16 @@ func decodeCountRequest(_ context.Context, r *http.Request) (interface{}, error)
 		return nil, err
 	}
 	return request, nil
+}
+
+func decodePublishMessageRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	var request publishMessageRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		return nil, err
+	}
+	return request, nil
+}
+
+func decodeServiceDiscoveryRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	return sdRequest{}, nil
 }

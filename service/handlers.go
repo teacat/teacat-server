@@ -18,6 +18,8 @@ func serviceHandlers(ctx context.Context, opts []httptransport.ServerOption, svc
 
 	uppercaseHandler := httptransport.NewServer(ctx, makeUppercaseEndpoint(svc), decodeUppercaseRequest, encodeResponse, opts...)
 	countHandler := httptransport.NewServer(ctx, makeCountEndpoint(svc), decodeCountRequest, encodeResponse, opts...)
+	publishHandler := httptransport.NewServer(ctx, makePublishMessageEndpoint(svc), decodePublishMessageRequest, encodeResponse, opts...)
+	consulsdHandler := httptransport.NewServer(ctx, makeServiceDiscoveryEndpoint(svc), decodeServiceDiscoveryRequest, encodeResponse, opts...)
 
 	return []serviceHandler{
 		{
@@ -27,6 +29,14 @@ func serviceHandlers(ctx context.Context, opts []httptransport.ServerOption, svc
 		{
 			pattern: "/count",
 			handler: countHandler,
+		},
+		{
+			pattern: "/publish",
+			handler: publishHandler,
+		},
+		{
+			pattern: "/sd_health",
+			handler: consulsdHandler,
 		},
 		{
 			pattern: "/metrics",
@@ -47,9 +57,9 @@ func messageHandlers(svc Service) []messageHandler {
 
 	return []messageHandler{
 		{
-			topic:   "new_user",
+			topic:   "hello_world",
 			channel: "string",
-			handler: svc.Test,
+			handler: svc.ReceiveMessage,
 		},
 	}
 }

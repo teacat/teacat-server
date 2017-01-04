@@ -2,12 +2,12 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"net/http"
-	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
 
-	"github.com/go-kit/kit/endpoint"
+	"github.com/stretchr/testify/assert"
 
 	"golang.org/x/net/context"
 )
@@ -18,11 +18,29 @@ var (
 )
 
 func init() {
-	// Load the configurations.
-	loadConfig("../")
-
 	listenPort := ":8080"
 	resetDB := false
+
+	os.Setenv("KITSVC_NAME", "StringService")
+	os.Setenv("KITSVC_URL", "http://127.0.0.1:8080")
+	os.Setenv("KITSVC_ADDR", "127.0.0.1:8080")
+	os.Setenv("KITSVC_PORT", "8080")
+	os.Setenv("KITSVC_USAGE", "Operations about the string.")
+	os.Setenv("KITSVC_VERSION", "0.0.1")
+	os.Setenv("KITSVC_DATABASE_NAME", "service")
+	os.Setenv("KITSVC_DATABASE_HOST", "127.0.0.1:3306")
+	os.Setenv("KITSVC_DATABASE_USER", "root")
+	os.Setenv("KITSVC_DATABASE_PASSWORD", "root")
+	os.Setenv("KITSVC_DATABASE_CHARSET", "utf8")
+	os.Setenv("KITSVC_DATABASE_LOC", "Local")
+	os.Setenv("KITSVC_DATABASE_PARSE_TIME", "true")
+	os.Setenv("KITSVC_NSQ_PRODUCER", "127.0.0.1:4150")
+	os.Setenv("KITSVC_NSQ_LOOKUPS", "127.0.0.1:4161")
+	os.Setenv("KITSVC_PROMETHEUS_NAMESPACE", "my_group")
+	os.Setenv("KITSVC_PROMETHEUS_SUBSYSTEM", "string_service")
+	os.Setenv("KITSVC_CONSUL_CHECK_INTERVAL", "10s")
+	os.Setenv("KITSVC_CONSUL_CHECK_TIMEOUT", "1s")
+	os.Setenv("KITSVC_CONSUL_TAGS", "string,micro")
 
 	// Create the logger with the specified listen port.
 	logger := createLogger(&listenPort)
@@ -36,74 +54,78 @@ func init() {
 	// Create the main service with what it needs.
 	svc, ctx = createService(logger, msg, model)
 
+	registerService(logger)
+
 	go http.ListenAndServe(listenPort, nil)
 }
 
-type testEndpoint struct {
-	body     string
-	decoder  func(_ context.Context, r *http.Request) (interface{}, error)
-	endpoint func(svc Service) endpoint.Endpoint
-}
+func testFunction(pattern string, body string) (string, error) {
 
-func createTestEndpoint(e testEndpoint) (interface{}, error) {
-	httpRequest := httptest.NewRequest("POST", "http://localhost/", bytes.NewReader([]byte(e.body)))
-	req, _ := e.decoder(ctx, httpRequest)
+	b := bytes.NewReader([]byte(body))
 
-	return e.endpoint(svc)(ctx, req)
-}
-
-func TestUppercase(t *testing.T) {
-
-	resp, _ := http.Post("http://localhost:8080/uppercase", "application/json", bytes.NewReader([]byte(`{"s": "test"}`)))
-
-	//json.NewDecoder(resp.Body).Decode(&yourStuff)
+	resp, err := http.Post(os.Getenv("KITSVC_URL")+pattern, "application/json", b)
 
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
-	s := buf.String()
-	fmt.Println(s)
-	//fmt.Printf("%+v\n", resp)
+	s := strings.TrimSpace(buf.String())
 
-	/*res := uppercaseResponse{V: "TEST"}
-	emptyRes := uppercaseResponse{V: ""}
+	return s, err
+}
 
-	if r, _ := createTestEndpoint(testEndpoint{
-		body:     `{"s": "test"}`,
-		decoder:  decodeUppercaseRequest,
-		endpoint: makeUppercaseEndpoint,
-	}); r != res {
-		t.Error("Uppercase() cannot convert the string to uppercase.")
+func TestUppercase(t *testing.T) {
+	{
+		body := `{"s": "test"}`
+		expected := `{"status":"success","code":"success","message":"","payload":{"v":"TEST"}}`
+		resp, _ := testFunction("/uppercase", body)
+
+		assert.Equal(t, resp, expected, "Uppercase() cannot convert the string to uppercase.")
 	}
+	{
+		body := `{"s":`
+		expected := `{"status":"error","code":"error","message":"Cannot parse the JSON content.","payload":null}`
+		resp, _ := testFunction("/uppercase", body)
 
-	if _, err := createTestEndpoint(testEndpoint{
-		body:     `{"s": ""}`,
-		decoder:  decodeUppercaseRequest,
-		endpoint: makeUppercaseEndpoint,
-	}); err == nil {
-		t.Error("Uppercase() cannot tell the error.")
+		assert.Equal(t, resp, expected, "Uppercase() cannot tell when the parse error occurred.")
 	}
+	{
+		body := `{"s": ""}`
+		expected := `{"status":"error","code":"str_empty","message":"The string is empty.","payload":null}`
+		resp, _ := testFunction("/uppercase", body)
 
-	if r, _ := createTestEndpoint(testEndpoint{
-		body:     `{"s": ""}`,
-		decoder:  decodeUppercaseRequest,
-		endpoint: makeUppercaseEndpoint,
-	}); r != emptyRes {
-		t.Error("Uppercase() didn't return the empty string when the error occurred.")
-	}*/
-
-	/*if r, _ := svc.Uppercase("test"); r != "TEST" {
-		t.Error("Uppercase() cannot convert the string to uppercase.")
+		assert.Equal(t, resp, expected, "Uppercase() cannot tell the error.")
 	}
-	if _, err := svc.Uppercase(""); err == nil {
-		t.Error("Uppercase() cannot tell the error.")
-	}
-	if r, _ := svc.Uppercase(""); r != "" {
-		t.Error("Uppercase() didn't return the empty string when the error occurred.")
-	}*/
 }
 
 func TestCount(t *testing.T) {
-	if r := svc.Count("test"); r != 4 {
-		t.Error("Count() cannot count the length of the string.")
+	{
+		body := `{"s": "test"}`
+		expected := `{"status":"success","code":"success","message":"","payload":{"v":4}}`
+		resp, _ := testFunction("/count", body)
+
+		assert.Equal(t, resp, expected, "Count() cannot count the length of the string.")
+	}
+	{
+		body := `{"s":`
+		expected := `{"status":"error","code":"error","message":"Cannot parse the JSON content.","payload":null}`
+		resp, _ := testFunction("/count", body)
+
+		assert.Equal(t, resp, expected, "Count() cannot tell when the parse error occurred.")
+	}
+}
+
+func TestPublishMessage(t *testing.T) {
+	{
+		body := `{"s": "test"}`
+		expected := `{"status":"success","code":"success","message":"","payload":{"v":"test"}}`
+		resp, _ := testFunction("/publish", body)
+
+		assert.Equal(t, resp, expected, "PublishMessage() cannot publish the message via NSQ.")
+	}
+	{
+		body := `{"s":`
+		expected := `{"status":"error","code":"error","message":"Cannot parse the JSON content.","payload":null}`
+		resp, _ := testFunction("/publish", body)
+
+		assert.Equal(t, resp, expected, "PublishMessage() cannot tell when the parse error occurred.")
 	}
 }

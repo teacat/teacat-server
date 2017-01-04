@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	nsq "github.com/bitly/go-nsq"
@@ -23,7 +22,9 @@ var (
 type Service interface {
 	Uppercase(string) (string, error)
 	Count(string) int
-	Test(*nsq.Message)
+	PublishMessage(string)
+	ReceiveMessage(*nsq.Message)
+	ServiceDiscoveryCheck()
 }
 
 // Service operation is just like the controller in the MVC architecture,
@@ -35,8 +36,6 @@ type Service interface {
 
 // Uppercase converts the string to uppercase.
 func (svc service) Uppercase(s string) (string, error) {
-
-	//svc.Message.Publish("new_user", []byte("test"))
 
 	res, err := svc.Model.ToUpper(s)
 	if err != nil {
@@ -51,6 +50,13 @@ func (svc service) Count(s string) int {
 	return svc.Model.Count(s)
 }
 
-func (service) Test(msg *nsq.Message) {
-	fmt.Println(msg)
+func (svc service) PublishMessage(s string) {
+	svc.Message.Publish("hello_world", []byte(s))
+}
+
+func (service) ReceiveMessage(msg *nsq.Message) {
+}
+
+func (service) ServiceDiscoveryCheck() {
+
 }

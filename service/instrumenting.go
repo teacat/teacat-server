@@ -40,14 +40,26 @@ func (mw InstrumentingMiddleware) Count(s string) (n int) {
 	return
 }
 
-// Test records the instrument about the Test function of the service.
-func (mw InstrumentingMiddleware) Test(msg *nsq.Message) {
+// PublishMessage records the instrument about the PublishMessage function of the service.
+func (mw InstrumentingMiddleware) PublishMessage(s string) {
+	defer func(begin time.Time) {
+		lvs := []string{"method", "publish_message", "error", "false"}
+		mw.requestCount.With(lvs...).Add(1)
+		mw.requestLatency.With(lvs...).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	mw.Service.PublishMessage(s)
+	return
+}
+
+// ReceiveMessage records the instrument about the ReceiveMessage function of the service.
+func (mw InstrumentingMiddleware) ReceiveMessage(msg *nsq.Message) {
 	defer func(begin time.Time) {
 		lvs := []string{"method", "test", "error", "false"}
 		mw.requestCount.With(lvs...).Add(1)
 		mw.requestLatency.With(lvs...).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	mw.Service.Test(msg)
+	mw.Service.ReceiveMessage(msg)
 	return
 }
