@@ -33,9 +33,6 @@ type publishMessageResponse struct {
 	V string `json:"v"`
 }
 
-type sdRequest struct {
-}
-
 type sdResponse struct {
 	P string `json:"pong"`
 }
@@ -70,7 +67,6 @@ func makePublishMessageEndpoint(svc Service) endpoint.Endpoint {
 
 func makeServiceDiscoveryEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		svc.ServiceDiscoveryCheck()
 		return sdResponse{"pong"}, nil
 	}
 }
@@ -100,5 +96,5 @@ func decodePublishMessageRequest(_ context.Context, r *http.Request) (interface{
 }
 
 func decodeServiceDiscoveryRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	return sdRequest{}, nil
+	return nil, nil
 }

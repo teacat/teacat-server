@@ -30,7 +30,7 @@ func main() {
 	// Create the model with the database connection.
 	model := createModel(db)
 	// Create the messaging service with the logger.
-	msg := createMessage(logger)
+	msg := createMessage()
 
 	// Create the main service with what it needs.
 	createService(logger, msg, model)

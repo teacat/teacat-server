@@ -46,19 +46,6 @@ func (mw LoggingMiddleware) Count(s string) (n int) {
 }
 
 // PublishMessage logs the informations about the PublishMessage function of the service.
-func (mw LoggingMiddleware) ServiceDiscoveryCheck() {
-	defer func(begin time.Time) {
-		_ = mw.Logger.Log(
-			"method", "service_discovery_check",
-			"took", time.Since(begin),
-		)
-	}(time.Now())
-
-	mw.Service.ServiceDiscoveryCheck()
-	return
-}
-
-// PublishMessage logs the informations about the PublishMessage function of the service.
 func (mw LoggingMiddleware) PublishMessage(s string) {
 	defer func(begin time.Time) {
 		_ = mw.Logger.Log(

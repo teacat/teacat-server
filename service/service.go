@@ -24,7 +24,6 @@ type Service interface {
 	Count(string) int
 	PublishMessage(string)
 	ReceiveMessage(*nsq.Message)
-	ServiceDiscoveryCheck()
 }
 
 // Service operation is just like the controller in the MVC architecture,
@@ -55,8 +54,5 @@ func (svc service) PublishMessage(s string) {
 }
 
 func (service) ReceiveMessage(msg *nsq.Message) {
-}
-
-func (service) ServiceDiscoveryCheck() {
-
+	//fmt.Println("Message received: " + string(msg.Body))
 }

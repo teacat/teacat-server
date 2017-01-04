@@ -49,7 +49,7 @@ func init() {
 	// Create the model with the database connection.
 	model := createModel(db)
 	// Create the messaging service with the logger.
-	msg := createMessage(logger)
+	msg := createMessage()
 
 	// Create the main service with what it needs.
 	svc, ctx = createService(logger, msg, model)
@@ -128,4 +128,49 @@ func TestPublishMessage(t *testing.T) {
 
 		assert.Equal(t, resp, expected, "PublishMessage() cannot tell when the parse error occurred.")
 	}
+}
+
+func TestServiceDiscoveryMessage(t *testing.T) {
+	{
+		body := ``
+		expected := `{"status":"success","code":"success","message":"","payload":{"pong":"pong"}}`
+		resp, _ := testFunction("/sd_health", body)
+
+		assert.Equal(t, resp, expected, "Cannot ping to the service discovery health check function.")
+	}
+}
+
+func TestDatabase(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Database didn't panic when the host is incorrect.")
+		}
+	}()
+
+	resetDB := false
+
+	os.Setenv("KITSVC_DATABASE_HOST", "xxxxxx")
+	createDatabase(&resetDB)
+}
+
+func TestProducer1(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Messging system didn't panic when the producer is incorrect.")
+		}
+	}()
+
+	messageSubscribe("x!#$@%^&V.13", "!@#%^.1236", nil)
+}
+
+func TestProducer2(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Messging system didn't panic when the producer is incorrect.")
+		}
+	}()
+
+	os.Setenv("KITSVC_NSQ_LOOKUPS", "xxxxx")
+
+	messageSubscribe("test", "test", nil)
 }

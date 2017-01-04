@@ -5,8 +5,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/go-kit/kit/log"
-
 	nsq "github.com/bitly/go-nsq"
 )
 
@@ -18,10 +16,10 @@ type messageHandler struct {
 	handler messageHandlerFunc
 }
 
-func createMessage(l log.Logger) *nsq.Producer {
+func createMessage() *nsq.Producer {
 	prod, err := nsq.NewProducer(os.Getenv("KITSVC_NSQ_PRODUCER"), nsq.NewConfig())
 	if err != nil {
-		l.Log("module", "nsq", "msg", err)
+		panic(err)
 	}
 
 	return prod
