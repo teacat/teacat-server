@@ -11,11 +11,18 @@ import (
 	httptransport "github.com/go-kit/kit/transport/http"
 )
 
+// The functions, structs down below are the core methods,
+// you shouldn't edit them until you know what you're doing,
+// or you understand how KitSvc works.
+//
+// Or if you are brave enough ;)
+
 func main() {
 
 	// Command line flags.
 	var (
 		listenPort = flag.String("listen", ":8080", "HTTP listen address")
+		resetDB    = flag.Bool("reinitialize-database", false, "Set true to reinitialize the database, it's useful with the unit testing. The database will backed up before the database was reinitialized.")
 	)
 	flag.Parse()
 
@@ -25,7 +32,7 @@ func main() {
 	// Create the logger with the specified listen port.
 	logger := createLogger(listenPort)
 	// Create the database connection.
-	db := createDatabase()
+	db := createDatabase(resetDB)
 	// Create the model with the database connection.
 	model := createModel(db)
 	// Create the messaging service with the logger.

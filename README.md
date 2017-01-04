@@ -13,19 +13,14 @@
 
 ## 主要結構
 
-下列結構中*將會修改到的檔案都被標記星號（*）*了。
+在 KitSvc 中所有系統核心檔案都以 `core_*.go` 作為命名格式，這意味著你並不會動到他們。下面是一個你能夠編輯的資料結構。
 
 ```js
 KitSvc
 ├── service
-│  ├── config.go
-│  ├── *database.go        // 資料庫存取
-│  ├── dicovery.go
 │  ├── *handlers.go        // 路由處理
 │  ├── *instrumenting.go   // 效能測量層
 │  ├── *logging.go         // 紀錄層
-│  ├── main.go
-│  ├── messaging.go
 │  ├── *model.go           // 資料、邏輯處理
 │  ├── *service.go         // 主服務功能
 │  └── *transport.go       // 轉繼層和進入點

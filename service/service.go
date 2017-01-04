@@ -1,12 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-
-	"golang.org/x/net/context"
 
 	nsq "github.com/bitly/go-nsq"
 )
@@ -22,20 +19,19 @@ var (
 	}
 )
 
-// Service represents the operations of the servicer can do.
+// Service represents the operations of the service can do.
 type Service interface {
 	Uppercase(string) (string, error)
 	Count(string) int
 	Test(*nsq.Message)
 }
 
-type service struct {
-	Message *nsq.Producer
-	Model
-}
-
-// ServiceMiddleware is a chainable behavior modifier for Service.
-type ServiceMiddleware func(Service) Service
+// Service operation is just like the controller in the MVC architecture,
+// We don't process the data in the controller but decide what model to call,
+// then we pass the data to the model.
+//
+// Create the service operations with the following format:
+//     func (svc service)...
 
 // Uppercase converts the string to uppercase.
 func (svc service) Uppercase(s string) (string, error) {
@@ -57,62 +53,4 @@ func (svc service) Count(s string) int {
 
 func (service) Test(msg *nsq.Message) {
 	fmt.Println(msg)
-}
-
-type Err struct {
-	Message error
-	Payload interface{}
-}
-
-func (e Err) Error() string {
-	return e.Message.Error()
-}
-
-type ErrInfo struct {
-	Text   error
-	Status int
-	Code   string
-}
-
-func (e ErrInfo) Error() string {
-	return e.Text.Error()
-}
-
-type response struct {
-	Status  string      `json:"status"`
-	Code    string      `json:"code"`
-	Message string      `json:"message"`
-	Payload interface{} `json:"payload"`
-}
-
-func errorEncoder(c context.Context, err error, w http.ResponseWriter) {
-
-	status, msg, code, payload :=
-		err.(Err).Message.(ErrInfo).Status,
-		err.(Err).Message.(ErrInfo).Text.Error(),
-		err.(Err).Message.(ErrInfo).Code,
-		err.(Err).Payload
-
-	if status == 0 {
-		status = http.StatusInternalServerError
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(response{
-		Status:  "error",
-		Code:    code,
-		Message: msg,
-		Payload: payload,
-	})
-}
-
-func encodeResponse(_ context.Context, w http.ResponseWriter, resp interface{}) error {
-	w.Header().Set("Content-Type", "application/json")
-	return json.NewEncoder(w).Encode(response{
-		Status:  "success",
-		Code:    "success",
-		Message: "",
-		Payload: resp,
-	})
 }

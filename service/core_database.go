@@ -9,7 +9,7 @@ import (
 )
 
 // createDatabase creates the database connection.
-func createDatabase() *gorm.DB {
+func createDatabase(resetDB *bool) *gorm.DB {
 
 	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=%s&loc=%s",
 		viper.GetString("database.user"),
