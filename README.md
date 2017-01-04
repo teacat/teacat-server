@@ -49,10 +49,61 @@ $ go build
 $ ./KitSvc
 ```
 
+## 環境變數設置
+
+為了方便在 Docker 上部署，KitSvc 沒有設定檔，而是透過環境變數來設置。
+
+```bash
+# 服務名稱
+KITSVC_NAME="StringService"
+# 服務暴露網址
+KITSVC_URL="http://127.0.0.1:8080"
+# 服務位置
+KITSVC_ADDR="127.0.0.1:8080"
+# 服務埠口
+KITSVC_PORT=8080
+# 服務註釋
+KITSVC_USAGE="Operations about the string."
+# 服務版本
+KITSVC_VERSION="0.0.1"
+
+# 資料庫名稱
+KITSVC_DATABASE_NAME="service"
+# 資料庫主機位置與埠口
+KITSVC_DATABASE_HOST="127.0.0.1:3306"
+# 資料庫帳號
+KITSVC_DATABASE_USER="root"
+# 資料庫密碼
+KITSVC_DATABASE_PASSWORD="root"
+# 資料庫字符集
+KITSVC_DATABASE_CHARSET="utf8"
+# 資料庫時間地區
+KITSVC_DATABASE_LOC="Local"
+# 是否解析時間
+KITSVC_DATABASE_PARSE_TIME=true
+
+# 訊息產生者位置
+KITSVC_NSQ_PRODUCER="127.0.0.1:4150"
+# 訊息中心位置（以無空白 `,` 逗號新增多個位置）
+KITSVC_NSQ_LOOKUPS="127.0.0.1:4161"
+
+# 紀錄的命名空間
+KITSVC_PROMETHEUS_NAMESPACE="my_group"
+# 紀錄的服務名稱
+KITSVC_PROMETHEUS_SUBSYSTEM="string_service"
+
+# 服務中心的健康檢查時間
+KITSVC_CONSUL_CHECK_INTERVAL="10s"
+# 服務中心的健康檢查逾時時間
+KITSVC_CONSUL_CHECK_TIMEOUT="1s"
+# 服務中心的服務標籤（以無空白 `,` 逗號新增多個位置）
+KITSVC_CONSUL_TAGS="string,micro"
+```
+
 ## 模塊介紹
 
 * **資料庫（Database）**：一個微服務擁有一個資料庫，同屬性的微服務可共享同一個資料庫，在這裡我們採用 Gorm 與資料庫連線。
-* **服務探索（Discovery）**：向 Consul 服務中心註冊，表示自己可供使用。
+* **服務探索（Discovery）**：向 Consul 服務中心註冊，表示自己可供使用，此舉是利於負載平衡做相關處理。
 * **效能測量（Instrumenting）**：每個函式的執行時間、呼叫次數都可以被測量，並傳送給 Prometheus 伺服器彙整成視覺化資料。
 * **紀錄層（Logging）**：傳入、輸出請求都可以被記錄，最終可以儲存程記錄檔供未來除錯。
 * **訊息傳遞（Messaging）**：微服務之間並不會直接溝通（很少數），但他們可以透過 NSQ 訊息中心廣播讓另一個微服務處理相關事情，且無需等待該微服務處理完畢（即異步處理，不會阻擋）。
