@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/go-kit/kit/log"
@@ -45,7 +46,14 @@ func messageSubscribe(topic string, ch string, fn messageHandlerFunc) {
 }
 
 func setMessageSubscription(handlers []messageHandler) {
+
 	for _, v := range handlers {
+		// Create the topic
+		cmd := exec.Command("curl", "-X", "POST", "http://127.0.0.1:4151/topic/create?topic="+v.topic)
+		cmd.Start()
+		cmd.Wait()
+
+		// Subscribe to the topic
 		messageSubscribe(v.topic, v.channel, v.handler)
 	}
 }
