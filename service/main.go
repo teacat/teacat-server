@@ -6,10 +6,15 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+
+	"golang.org/x/net/context"
+
 	"os/exec"
 	"os/signal"
 	"strconv"
 	"strings"
+
+	"github.com/go-kit/kit/endpoint"
 
 	nsq "github.com/bitly/go-nsq"
 	"github.com/go-kit/kit/log"
@@ -22,7 +27,6 @@ import (
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/jinzhu/gorm"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/net/context"
 )
 
 // The functions, structs down below are the core methods,
@@ -344,6 +348,20 @@ func registerService(logger log.Logger) {
 
 	// Register the service.
 	reg.Register()
+}
+
+type sdResponse struct {
+	P string `json:"pong"`
+}
+
+func makeServiceDiscoveryEndpoint(svc Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		return sdResponse{"pong"}, nil
+	}
+}
+
+func decodeServiceDiscoveryRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	return nil, nil
 }
 
 //

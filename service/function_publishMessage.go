@@ -1,8 +1,38 @@
 package main
 
 import (
+	"encoding/json"
+	"net/http"
 	"time"
+
+	"golang.org/x/net/context"
+
+	"github.com/go-kit/kit/endpoint"
 )
+
+type publishMessageRequest struct {
+	S string `json:"s"`
+}
+
+type publishMessageResponse struct {
+	V string `json:"v"`
+}
+
+func makePublishMessageEndpoint(svc Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(publishMessageRequest)
+		svc.PublishMessage(req.S)
+		return publishMessageResponse{req.S}, nil
+	}
+}
+
+func decodePublishMessageRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	var request publishMessageRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		return nil, err
+	}
+	return request, nil
+}
 
 // PublishMessage logs the informations about the PublishMessage function of the service.
 func (mw LoggingMiddleware) PublishMessage(s string) {
