@@ -48,11 +48,9 @@ func init() {
 	db := createDatabase(&resetDB)
 	// Create the model with the database connection.
 	model := createModel(db)
-	// Create the messaging service with the logger.
-	msg := createMessage()
 
 	// Create the main service with what it needs.
-	svc, ctx = createService(logger, msg, model)
+	svc, ctx = createService(logger, model)
 
 	registerService(logger)
 
@@ -112,24 +110,6 @@ func TestCount(t *testing.T) {
 		assert.Equal(t, resp, expected, "Count() cannot tell when the parse error occurred.")
 	}
 }
-
-func TestPublishMessage(t *testing.T) {
-	{
-		body := `{"s": "test"}`
-		expected := `{"status":"success","code":"success","message":"","payload":{"v":"test"}}`
-		resp, _ := testFunction("/publish", body)
-
-		assert.Equal(t, resp, expected, "PublishMessage() cannot publish the message via NSQ.")
-	}
-	{
-		body := `{"s":`
-		expected := `{"status":"error","code":"error","message":"Cannot parse the JSON content.","payload":null}`
-		resp, _ := testFunction("/publish", body)
-
-		assert.Equal(t, resp, expected, "PublishMessage() cannot tell when the parse error occurred.")
-	}
-}
-
 func TestServiceDiscoveryMessage(t *testing.T) {
 	{
 		body := ``
@@ -151,26 +131,4 @@ func TestDatabase(t *testing.T) {
 
 	os.Setenv("KITSVC_DATABASE_HOST", "xxxxxx")
 	createDatabase(&resetDB)
-}
-
-func TestProducer1(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("Messging system didn't panic when the producer is incorrect.")
-		}
-	}()
-
-	messageSubscribe("x!#$@%^&V.13", "!@#%^.1236", nil)
-}
-
-func TestProducer2(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("Messging system didn't panic when the producer is incorrect.")
-		}
-	}()
-
-	os.Setenv("KITSVC_NSQ_LOOKUPS", "xxxxx")
-
-	messageSubscribe("test", "test", nil)
 }

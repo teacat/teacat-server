@@ -6,18 +6,16 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
+	"time"
 
 	"golang.org/x/net/context"
 
-	"os/exec"
 	"os/signal"
 	"strconv"
 	"strings"
 
 	"github.com/go-kit/kit/endpoint"
-
-	nsq "github.com/bitly/go-nsq"
-	"github.com/go-kit/kit/log"
 	kitlog "github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/metrics"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
@@ -25,6 +23,7 @@ import (
 	httptransport "github.com/go-kit/kit/transport/http"
 	_ "github.com/go-sql-driver/mysql"
 	consulapi "github.com/hashicorp/consul/api"
+	"github.com/jetbasrawi/go.geteventstore"
 	"github.com/jinzhu/gorm"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
@@ -50,11 +49,11 @@ func main() {
 	db := createDatabase(resetDB)
 	// Create the model with the database connection.
 	model := createModel(db)
-	// Create the messaging service with the logger.
-	msg := createMessage()
+	//
+	es := createEventStore()
 
 	// Create the main service with what it needs.
-	createService(logger, msg, model)
+	createService(logger, model, es)
 	// Register the service to the service registry.
 	registerService(logger)
 
@@ -118,51 +117,58 @@ func createInstruMiddleware() ServiceMiddleware {
 //
 //
 
-type messageHandlerFunc func(*nsq.Message)
-
-type messageHandler struct {
-	topic   string
-	channel string
-	handler messageHandlerFunc
+type eventListener struct {
+	event   string
+	body    map[string]interface{}
+	meta    map[string]string
+	handler func(map[string]interface{}, map[string]string)
 }
 
-func createMessage() *nsq.Producer {
-	prod, err := nsq.NewProducer(os.Getenv("KITSVC_NSQ_PRODUCER"), nsq.NewConfig())
+func createEventStore() *goes.Client {
+	client, err := goes.NewClient(nil, os.Getenv("KITSVC_ES_SERVER_URL"))
 	if err != nil {
 		panic(err)
 	}
 
-	return prod
+	client.SetBasicAuth(os.Getenv("KITSVC_ES_USERNAME"), os.Getenv("KITSVC_ES_PASSWORD"))
+
+	return client
 }
 
-func messageSubscribe(topic string, ch string, fn messageHandlerFunc) {
+func setEventSubscription(client *goes.Client, listeners []eventListener) {
 
-	q, err := nsq.NewConsumer(topic, ch, nsq.NewConfig())
-	if err != nil {
-		panic(err)
-	}
+	for _, v := range listeners {
 
-	q.AddHandler(nsq.HandlerFunc(func(msg *nsq.Message) error {
-		fn(msg)
+		//
 
-		return nil
-	}))
+		reader := client.NewStreamReader(v.event)
 
-	if err := q.ConnectToNSQLookupds(strings.Split(os.Getenv("KITSVC_NSQ_LOOKUPS"), ",")); err != nil {
-		panic(err)
-	}
-}
+		for reader.Next() {
+			if reader.Err() != nil {
+				if _, ok := reader.Err().(*goes.ErrNoMoreEvents); ok {
+					continue
+				} else if _, ok := reader.Err().(*goes.ErrNotFound); ok {
+					writer := client.NewStreamWriter(v.event)
+					err := writer.Append(nil, goes.NewEvent("", "", map[string]string{}, map[string]string{}))
+					if err != nil {
+						panic(err)
+					}
+					continue
+				} else if match, _ := regexp.MatchString(".*connection refused.*", reader.Err().Error()); match {
+					time.Sleep(time.Second * 2)
+					continue
+				} else {
+					panic(reader.Err())
+				}
+			}
 
-func setMessageSubscription(handlers []messageHandler) {
+			err := reader.Scan(&v.body, &v.meta)
+			if err != nil {
+				panic(err)
+			}
 
-	for _, v := range handlers {
-		// Create the topic
-		cmd := exec.Command("curl", "-X", "POST", "http://127.0.0.1:4151/topic/create?topic="+v.topic)
-		cmd.Start()
-		cmd.Wait()
-
-		// Subscribe to the topic
-		messageSubscribe(v.topic, v.channel, v.handler)
+			v.handler(v.body, v.meta)
+		}
 	}
 }
 
@@ -189,8 +195,8 @@ func createModel(db *gorm.DB) Model {
 //
 
 type service struct {
-	Message *nsq.Producer
 	Model
+	ES *goes.Client
 }
 
 // ServiceMiddleware is a chainable behavior modifier for Service.
@@ -265,10 +271,10 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, resp interface{}) 
 }
 
 // createService creates the main service by setting the handlers and preparing the middlewares.
-func createService(logger kitlog.Logger, msg *nsq.Producer, model Model) (Service, context.Context) {
+func createService(logger kitlog.Logger, model Model, es *goes.Client) (Service, context.Context) {
 
 	var svc Service
-	svc = service{Message: msg, Model: model}
+	svc = service{Model: model, ES: es}
 	svc = createLoggingMiddleware(logger)(svc)
 	svc = createInstruMiddleware()(svc)
 
@@ -278,7 +284,7 @@ func createService(logger kitlog.Logger, msg *nsq.Producer, model Model) (Servic
 	}
 
 	setServiceSubscription(serviceHandlers(ctx, options, svc))
-	setMessageSubscription(messageHandlers(svc))
+	go setEventSubscription(es, eventListeners(svc))
 
 	return svc, ctx
 }
@@ -302,22 +308,22 @@ func setServiceSubscription(handlers []serviceHandler) {
 
 // LoggingMiddleware represents a middleware of the logger.
 type LoggingMiddleware struct {
-	Logger log.Logger
+	Logger kitlog.Logger
 	Service
 }
 
 // createLoggingMiddleware creates the logging middleware.
-func createLoggingMiddleware(logger log.Logger) ServiceMiddleware {
+func createLoggingMiddleware(logger kitlog.Logger) ServiceMiddleware {
 	return func(next Service) Service {
 		return LoggingMiddleware{Logger: logger, Service: next}
 	}
 }
 
 // createLogger creates the logger with the specified port which tracks the function callers.
-func createLogger(port *string) log.Logger {
-	var logger log.Logger
-	logger = log.NewLogfmtLogger(os.Stderr)
-	logger = log.NewContext(logger).With("listen", port).With("caller", log.DefaultCaller)
+func createLogger(port *string) kitlog.Logger {
+	var logger kitlog.Logger
+	logger = kitlog.NewLogfmtLogger(os.Stderr)
+	logger = kitlog.NewContext(logger).With("listen", port).With("caller", kitlog.DefaultCaller)
 
 	return logger
 }
@@ -329,7 +335,7 @@ func createLogger(port *string) log.Logger {
 //
 
 // registerService register the service to the service discovery server(consul).
-func registerService(logger log.Logger) {
+func registerService(logger kitlog.Logger) {
 	p, _ := strconv.Atoi(os.Getenv("KITSVC_PORT"))
 
 	info := consulapi.AgentServiceRegistration{

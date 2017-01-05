@@ -87,6 +87,11 @@ KITSVC_NSQ_PRODUCER="127.0.0.1:4150"
 # 訊息中心位置（以無空白 `,` 逗號新增多個位置）
 KITSVC_NSQ_LOOKUPS="127.0.0.1:4161"
 
+#
+KITSVC_ES_SERVER_URL="http://127.0.0.1:2113"
+KITSVC_ES_USERNAME="admin"
+KITSVC_ES_PASSWORD="changeit"
+
 # 紀錄的命名空間
 KITSVC_PROMETHEUS_NAMESPACE="my_group"
 # 紀錄的服務名稱

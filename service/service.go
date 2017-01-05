@@ -7,8 +7,6 @@ import (
 
 	httptransport "github.com/go-kit/kit/transport/http"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
-
-	nsq "github.com/bitly/go-nsq"
 )
 
 // Error codes returned by failures
@@ -26,8 +24,7 @@ var (
 type Service interface {
 	Uppercase(string) (string, error)
 	Count(string) int
-	PublishMessage(string)
-	ReceiveMessage(*nsq.Message)
+	CatchEvent(map[string]interface{}, map[string]string)
 }
 
 // serviceHandlers returns the handlers that deal with the service.
@@ -35,7 +32,6 @@ func serviceHandlers(ctx context.Context, opts []httptransport.ServerOption, svc
 
 	uppercaseHandler := httptransport.NewServer(ctx, makeUppercaseEndpoint(svc), decodeUppercaseRequest, encodeResponse, opts...)
 	countHandler := httptransport.NewServer(ctx, makeCountEndpoint(svc), decodeCountRequest, encodeResponse, opts...)
-	publishHandler := httptransport.NewServer(ctx, makePublishMessageEndpoint(svc), decodePublishMessageRequest, encodeResponse, opts...)
 	consulsdHandler := httptransport.NewServer(ctx, makeServiceDiscoveryEndpoint(svc), decodeServiceDiscoveryRequest, encodeResponse, opts...)
 
 	return []serviceHandler{
@@ -48,10 +44,6 @@ func serviceHandlers(ctx context.Context, opts []httptransport.ServerOption, svc
 			handler: countHandler,
 		},
 		{
-			pattern: "/publish",
-			handler: publishHandler,
-		},
-		{
 			pattern: "/sd_health",
 			handler: consulsdHandler,
 		},
@@ -62,14 +54,13 @@ func serviceHandlers(ctx context.Context, opts []httptransport.ServerOption, svc
 	}
 }
 
-// messageHandlers returns the handlers that deal with the messages.
-func messageHandlers(svc Service) []messageHandler {
-
-	return []messageHandler{
+func eventListeners(svc Service) []eventListener {
+	return []eventListener{
 		{
-			topic:   "hello_world",
-			channel: "string",
-			handler: svc.ReceiveMessage,
+			event:   "HelloWorld",
+			body:    make(map[string]interface{}),
+			meta:    make(map[string]string),
+			handler: svc.CatchEvent,
 		},
 	}
 }
