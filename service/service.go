@@ -30,12 +30,6 @@ type Service interface {
 	ReceiveMessage(*nsq.Message)
 }
 
-// Create the service handlers with the serviceHandler struct:
-//     serviceHandler{
-//         pattern: "/uppercase",
-//         handler: uppercaseHandler,
-//     }
-
 // serviceHandlers returns the handlers that deal with the service.
 func serviceHandlers(ctx context.Context, opts []httptransport.ServerOption, svc Service) []serviceHandler {
 
@@ -67,13 +61,6 @@ func serviceHandlers(ctx context.Context, opts []httptransport.ServerOption, svc
 		},
 	}
 }
-
-// Create the message handlers with the messageHandler struct:
-//     messageHandler{
-//         topic:   "new_user",
-//         channel: "string",
-//         handler: svc.NewUser,
-//     }
 
 // messageHandlers returns the handlers that deal with the messages.
 func messageHandlers(svc Service) []messageHandler {

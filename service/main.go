@@ -67,6 +67,8 @@ func main() {
 //
 //
 //
+//
+//
 
 // InstrumentingMiddleware represents a middleware of the instrumenting.
 type InstrumentingMiddleware struct {
@@ -110,6 +112,8 @@ func createInstruMiddleware() ServiceMiddleware {
 	}
 }
 
+//
+//
 //
 //
 //
@@ -165,6 +169,8 @@ func setMessageSubscription(handlers []messageHandler) {
 //
 //
 //
+//
+//
 
 // Model represents the model layer of the service.
 type Model struct {
@@ -176,6 +182,8 @@ func createModel(db *gorm.DB) Model {
 	return Model{db}
 }
 
+//
+//
 //
 //
 //
@@ -289,6 +297,8 @@ func setServiceSubscription(handlers []serviceHandler) {
 //
 //
 //
+//
+//
 
 // LoggingMiddleware represents a middleware of the logger.
 type LoggingMiddleware struct {
@@ -312,6 +322,8 @@ func createLogger(port *string) log.Logger {
 	return logger
 }
 
+//
+//
 //
 //
 //
@@ -364,6 +376,8 @@ func decodeServiceDiscoveryRequest(_ context.Context, r *http.Request) (interfac
 	return nil, nil
 }
 
+//
+//
 //
 //
 //
