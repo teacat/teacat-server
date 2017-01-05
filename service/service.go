@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"net/http"
+
+	httptransport "github.com/go-kit/kit/transport/http"
+	stdprometheus "github.com/prometheus/client_golang/prometheus"
 
 	nsq "github.com/bitly/go-nsq"
 )
@@ -26,33 +30,59 @@ type Service interface {
 	ReceiveMessage(*nsq.Message)
 }
 
-// Service operation is just like the controller in the MVC architecture,
-// We don't process the data in the controller but decide what model to call,
-// then we pass the data to the model.
-//
-// Create the service operations with the following format:
-//     func (svc service)...
+// Create the service handlers with the serviceHandler struct:
+//     serviceHandler{
+//         pattern: "/uppercase",
+//         handler: uppercaseHandler,
+//     }
 
-// Uppercase converts the string to uppercase.
-func (svc service) Uppercase(s string) (string, error) {
+// serviceHandlers returns the handlers that deal with the service.
+func serviceHandlers(ctx context.Context, opts []httptransport.ServerOption, svc Service) []serviceHandler {
 
-	res, err := svc.Model.ToUpper(s)
-	if err != nil {
-		return "", err
+	uppercaseHandler := httptransport.NewServer(ctx, makeUppercaseEndpoint(svc), decodeUppercaseRequest, encodeResponse, opts...)
+	countHandler := httptransport.NewServer(ctx, makeCountEndpoint(svc), decodeCountRequest, encodeResponse, opts...)
+	publishHandler := httptransport.NewServer(ctx, makePublishMessageEndpoint(svc), decodePublishMessageRequest, encodeResponse, opts...)
+	consulsdHandler := httptransport.NewServer(ctx, makeServiceDiscoveryEndpoint(svc), decodeServiceDiscoveryRequest, encodeResponse, opts...)
+
+	return []serviceHandler{
+		{
+			pattern: "/uppercase",
+			handler: uppercaseHandler,
+		},
+		{
+			pattern: "/count",
+			handler: countHandler,
+		},
+		{
+			pattern: "/publish",
+			handler: publishHandler,
+		},
+		{
+			pattern: "/sd_health",
+			handler: consulsdHandler,
+		},
+		{
+			pattern: "/metrics",
+			handler: stdprometheus.Handler(),
+		},
 	}
-
-	return res, nil
 }
 
-// Count counts the length of the string.
-func (svc service) Count(s string) int {
-	return svc.Model.Count(s)
-}
+// Create the message handlers with the messageHandler struct:
+//     messageHandler{
+//         topic:   "new_user",
+//         channel: "string",
+//         handler: svc.NewUser,
+//     }
 
-func (svc service) PublishMessage(s string) {
-	svc.Message.Publish("hello_world", []byte(s))
-}
+// messageHandlers returns the handlers that deal with the messages.
+func messageHandlers(svc Service) []messageHandler {
 
-func (service) ReceiveMessage(msg *nsq.Message) {
-	//fmt.Println("Message received: " + string(msg.Body))
+	return []messageHandler{
+		{
+			topic:   "hello_world",
+			channel: "string",
+			handler: svc.ReceiveMessage,
+		},
+	}
 }
