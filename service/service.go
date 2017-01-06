@@ -35,7 +35,13 @@ func (svc service) Uppercase(s string) (string, error) {
 		return "", Err{Message: ErrEmpty}
 	}
 
-	return strings.ToUpper(s), nil
+	u := strings.ToUpper(s)
+
+	svc.Store.CreateString(s, u)
+
+	fmt.Println(svc.Store.GetLastString())
+
+	return u, nil
 }
 
 func (svc service) CatchEvent(body map[string]interface{}, meta map[string]string) {

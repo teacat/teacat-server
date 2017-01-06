@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -14,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/TeaMeow/KitSvc/service/store"
 	"github.com/go-kit/kit/endpoint"
 	kitlog "github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/metrics"
@@ -23,6 +23,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/jetbasrawi/go.geteventstore"
+	"github.com/jinzhu/gorm"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 )
@@ -47,14 +48,14 @@ func main() {
 	// Create the logger with the specified listen port.
 	logger := createLogger(listenPort)
 	// Create the database connection.
-	db := createDatabase(r)
-	// Create the model with the database connection.
-	model := createModel(db)
+	db := createDatabase()
+	//
+	s := createStore(r, db)
 	//
 	es := createEventStore()
 
 	// Create the main service with what it needs.
-	createService(logger, model, es)
+	createService(logger, es, s)
 	// Register the service to the service registry.
 	registerService(logger)
 
@@ -179,14 +180,15 @@ func setEventSubscription(client *goes.Client, listeners []eventListener) {
 //
 //
 
-// Model represents the model layer of the service.
-type Model struct {
-	*sql.DB
-}
+func createStore(resetDB bool, db *gorm.DB) store.Store {
+	s := store.Store{DB: db}
 
-// createModel creates the model of the service with the database connection.
-func createModel(db *sql.DB) Model {
-	return Model{db}
+	if resetDB {
+		s.Downstream()
+		s.Upstream()
+	}
+
+	return s
 }
 
 //
@@ -196,8 +198,8 @@ func createModel(db *sql.DB) Model {
 //
 
 type service struct {
-	Model
-	ES *goes.Client
+	Store store.Store
+	ES    *goes.Client
 }
 
 // ServiceMiddleware is a chainable behavior modifier for Service.
@@ -272,10 +274,10 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, resp interface{}) 
 }
 
 // createService creates the main service by setting the handlers and preparing the middlewares.
-func createService(logger kitlog.Logger, model Model, es *goes.Client) (Service, context.Context) {
+func createService(logger kitlog.Logger, es *goes.Client, s store.Store) (Service, context.Context) {
 
 	var svc Service
-	svc = service{Model: model, ES: es}
+	svc = service{Store: s, ES: es}
 	svc = createLoggingMiddleware(logger)(svc)
 	svc = createInstruMiddleware()(svc)
 
@@ -390,8 +392,9 @@ func decodeServiceDiscoveryRequest(_ context.Context, r *http.Request) (interfac
 //
 
 // createDatabase creates the database connection.
-func createDatabase(resetDB bool) *sql.DB {
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=%s&parseTime=%s&loc=%s",
+func createDatabase() *gorm.DB {
+
+	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=%s&parseTime=%s&loc=%s",
 		os.Getenv("KITSVC_DATABASE_USER"),
 		os.Getenv("KITSVC_DATABASE_PASSWORD"),
 		os.Getenv("KITSVC_DATABASE_HOST"),
@@ -402,12 +405,6 @@ func createDatabase(resetDB bool) *sql.DB {
 	))
 	if err != nil {
 		panic(err)
-	}
-
-	defer db.Close()
-
-	if resetDB {
-		//databaseUpstream(db)
 	}
 
 	return db
