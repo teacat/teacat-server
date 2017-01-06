@@ -64,5 +64,5 @@ func (mw InstrumentingMiddleware) Count(s string) (n int) {
 
 // Count counts the length of the string.
 func (svc service) Count(s string) int {
-	return svc.Model.Count(s)
+	return len(s)
 }

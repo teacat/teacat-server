@@ -29,4 +29,4 @@ export KITSVC_PROMETHEUS_NAMESPACE="string_service"
 export KITSVC_CONSUL_CHECK_INTERVAL="10s"
 export KITSVC_CONSUL_CHECK_TIMEOUT="1s"
 export KITSVC_CONSUL_TAGS="string,micro"
-./bin/KitSvc
+./bin/KitSvc -reinitialize-database

@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -34,8 +35,9 @@ func init() {
 	os.Setenv("KITSVC_DATABASE_CHARSET", "utf8")
 	os.Setenv("KITSVC_DATABASE_LOC", "Local")
 	os.Setenv("KITSVC_DATABASE_PARSE_TIME", "true")
-	os.Setenv("KITSVC_NSQ_PRODUCER", "127.0.0.1:4150")
-	os.Setenv("KITSVC_NSQ_LOOKUPS", "127.0.0.1:4161")
+	os.Setenv("KITSVC_ES_SERVER_URL", "http://127.0.0.1:2113")
+	os.Setenv("KITSVC_ES_USERNAME", "admin")
+	os.Setenv("KITSVC_ES_PASSWORD", "changeit")
 	os.Setenv("KITSVC_PROMETHEUS_NAMESPACE", "my_group")
 	os.Setenv("KITSVC_PROMETHEUS_SUBSYSTEM", "string_service")
 	os.Setenv("KITSVC_CONSUL_CHECK_INTERVAL", "10s")
@@ -45,15 +47,16 @@ func init() {
 	// Create the logger with the specified listen port.
 	logger := createLogger(&listenPort)
 	// Create the database connection.
-	db := createDatabase(&resetDB)
+	db := createDatabase(resetDB)
 	// Create the model with the database connection.
 	model := createModel(db)
+	es := createEventStore()
 
 	// Create the main service with what it needs.
-	svc, ctx = createService(logger, model)
+	svc, ctx = createService(logger, model, es)
 
 	registerService(logger)
-
+	time.Sleep(time.Second * 2)
 	go http.ListenAndServe(listenPort, nil)
 }
 
@@ -64,52 +67,25 @@ func testFunction(pattern string, body string) (string, error) {
 	resp, err := http.Post(os.Getenv("KITSVC_URL")+pattern, "application/json", b)
 
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(resp.Body)
+	if _, err := buf.ReadFrom(resp.Body); err != nil {
+		panic(err)
+	}
 	s := strings.TrimSpace(buf.String())
 
 	return s, err
 }
 
-func TestUppercase(t *testing.T) {
-	{
-		body := `{"s": "test"}`
-		expected := `{"status":"success","code":"success","message":"","payload":{"v":"TEST"}}`
-		resp, _ := testFunction("/uppercase", body)
-
-		assert.Equal(t, resp, expected, "Uppercase() cannot convert the string to uppercase.")
-	}
-	{
-		body := `{"s":`
-		expected := `{"status":"error","code":"error","message":"Cannot parse the JSON content.","payload":null}`
-		resp, _ := testFunction("/uppercase", body)
-
-		assert.Equal(t, resp, expected, "Uppercase() cannot tell when the parse error occurred.")
-	}
-	{
-		body := `{"s": ""}`
-		expected := `{"status":"error","code":"str_empty","message":"The string is empty.","payload":null}`
-		resp, _ := testFunction("/uppercase", body)
-
-		assert.Equal(t, resp, expected, "Uppercase() cannot tell the error.")
-	}
+func TestES(t *testing.T) {
+	es := createEventStore()
+	go setEventSubscription(es, []eventListener{
+		{
+			event:   "xxxxxxxxxxx",
+			body:    make(map[string]interface{}),
+			meta:    make(map[string]string),
+			handler: svc.CatchEvent,
+		}})
 }
 
-func TestCount(t *testing.T) {
-	{
-		body := `{"s": "test"}`
-		expected := `{"status":"success","code":"success","message":"","payload":{"v":4}}`
-		resp, _ := testFunction("/count", body)
-
-		assert.Equal(t, resp, expected, "Count() cannot count the length of the string.")
-	}
-	{
-		body := `{"s":`
-		expected := `{"status":"error","code":"error","message":"Cannot parse the JSON content.","payload":null}`
-		resp, _ := testFunction("/count", body)
-
-		assert.Equal(t, resp, expected, "Count() cannot tell when the parse error occurred.")
-	}
-}
 func TestServiceDiscoveryMessage(t *testing.T) {
 	{
 		body := ``

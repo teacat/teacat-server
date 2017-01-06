@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -69,10 +70,11 @@ func (mw InstrumentingMiddleware) Uppercase(s string) (output string, err error)
 // Uppercase converts the string to uppercase.
 func (svc service) Uppercase(s string) (string, error) {
 
-	res, err := svc.Model.ToUpper(s)
-	if err != nil {
-		return "", err
+	if s == "" {
+		return "", Err{
+			Message: ErrEmpty,
+		}
 	}
 
-	return res, nil
+	return strings.ToUpper(s), nil
 }
