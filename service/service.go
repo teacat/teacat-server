@@ -1,17 +1,14 @@
 package main
 
 import (
-	"context"
 	"errors"
+	"fmt"
 	"net/http"
-
-	httptransport "github.com/go-kit/kit/transport/http"
-	stdprometheus "github.com/prometheus/client_golang/prometheus"
+	"strings"
 )
 
 // Error codes returned by failures
 var (
-
 	// ErrEmpty will returned if the string is empty.
 	ErrEmpty = ErrInfo{
 		Text:   errors.New("The string is empty."),
@@ -27,40 +24,20 @@ type Service interface {
 	CatchEvent(map[string]interface{}, map[string]string)
 }
 
-// serviceHandlers returns the handlers that deal with the service.
-func serviceHandlers(ctx context.Context, opts []httptransport.ServerOption, svc Service) []serviceHandler {
-
-	uppercaseHandler := httptransport.NewServer(ctx, makeUppercaseEndpoint(svc), decodeUppercaseRequest, encodeResponse, opts...)
-	countHandler := httptransport.NewServer(ctx, makeCountEndpoint(svc), decodeCountRequest, encodeResponse, opts...)
-	consulsdHandler := httptransport.NewServer(ctx, makeServiceDiscoveryEndpoint(svc), decodeServiceDiscoveryRequest, encodeResponse, opts...)
-
-	return []serviceHandler{
-		{
-			pattern: "/uppercase",
-			handler: uppercaseHandler,
-		},
-		{
-			pattern: "/count",
-			handler: countHandler,
-		},
-		{
-			pattern: "/sd_health",
-			handler: consulsdHandler,
-		},
-		{
-			pattern: "/metrics",
-			handler: stdprometheus.Handler(),
-		},
-	}
+// Count counts the length of the string.
+func (svc service) Count(s string) int {
+	return len(s)
 }
 
-func eventListeners(svc Service) []eventListener {
-	return []eventListener{
-		{
-			event:   "HelloWorld",
-			body:    make(map[string]interface{}),
-			meta:    make(map[string]string),
-			handler: svc.CatchEvent,
-		},
+// Uppercase converts the string to uppercase.
+func (svc service) Uppercase(s string) (string, error) {
+	if s == "" {
+		return "", Err{Message: ErrEmpty}
 	}
+
+	return strings.ToUpper(s), nil
+}
+
+func (svc service) CatchEvent(body map[string]interface{}, meta map[string]string) {
+	fmt.Println(body["test"])
 }
