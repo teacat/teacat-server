@@ -7,32 +7,24 @@ import (
 	"golang.org/x/net/context"
 
 	httptransport "github.com/go-kit/kit/transport/http"
-	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
 // serviceHandlers returns the handlers that deal with the service.
 func serviceHandlers(ctx context.Context, opts []httptransport.ServerOption, svc Service) []serviceHandler {
 
-	uppercaseHandler := httptransport.NewServer(ctx, makeUppercaseEndpoint(svc), decodeUppercaseRequest, encodeResponse, opts...)
-	countHandler := httptransport.NewServer(ctx, makeCountEndpoint(svc), decodeCountRequest, encodeResponse, opts...)
-	consulsdHandler := httptransport.NewServer(ctx, makeServiceDiscoveryEndpoint(svc), decodeServiceDiscoveryRequest, encodeResponse, opts...)
+	uppercaseHandler := httptransport.NewServer(ctx, makePostUppercaseEndpoint(svc), decodeUppercaseRequest, encodeResponse, opts...)
+	countHandler := httptransport.NewServer(ctx, makePostCountEndpoint(svc), decodeCountRequest, encodeResponse, opts...)
 
 	return []serviceHandler{
 		{
+			method:  "POST",
 			pattern: "/uppercase",
 			handler: uppercaseHandler,
 		},
 		{
+			method:  "POST",
 			pattern: "/count",
 			handler: countHandler,
-		},
-		{
-			pattern: "/sd_health",
-			handler: consulsdHandler,
-		},
-		{
-			pattern: "/metrics",
-			handler: stdprometheus.Handler(),
 		},
 	}
 }

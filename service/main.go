@@ -21,6 +21,7 @@ import (
 	consulsd "github.com/go-kit/kit/sd/consul"
 	httptransport "github.com/go-kit/kit/transport/http"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/mux"
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/jetbasrawi/go.geteventstore"
 	"github.com/jinzhu/gorm"
@@ -55,12 +56,14 @@ func main() {
 	es := createEventStore()
 
 	// Create the main service with what it needs.
-	createService(logger, es, s)
+	_, _, mux := createService(logger, es, s)
 	// Register the service to the service registry.
 	registerService(logger)
 
 	// Log the ports.
 	logger.Log("msg", "HTTP", "addr", *listenPort)
+	//
+	http.Handle("/", mux)
 	// Start the service and listening to the requests.
 	logger.Log("err", http.ListenAndServe(*listenPort, nil))
 }
@@ -274,7 +277,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, resp interface{}) 
 }
 
 // createService creates the main service by setting the handlers and preparing the middlewares.
-func createService(logger kitlog.Logger, es *goes.Client, s store.Store) (Service, context.Context) {
+func createService(logger kitlog.Logger, es *goes.Client, s store.Store) (Service, context.Context, *mux.Router) {
 
 	var svc Service
 	svc = service{Store: s, ES: es}
@@ -286,21 +289,32 @@ func createService(logger kitlog.Logger, es *goes.Client, s store.Store) (Servic
 		httptransport.ServerErrorEncoder(errorEncoder),
 	}
 
-	setServiceSubscription(serviceHandlers(ctx, options, svc))
+	mux := setServiceSubscription(ctx, options, svc, serviceHandlers(ctx, options, svc))
 	go setEventSubscription(es, eventListeners(svc))
 
-	return svc, ctx
+	return svc, ctx, mux
 }
 
 type serviceHandler struct {
+	method  string
 	pattern string
 	handler http.Handler
 }
 
-func setServiceSubscription(handlers []serviceHandler) {
+func setServiceSubscription(ctx context.Context, opts []httptransport.ServerOption, svc Service, handlers []serviceHandler) *mux.Router {
+
+	r := mux.NewRouter()
+
+	consulsdHandler := httptransport.NewServer(ctx, makeServiceDiscoveryEndpoint(svc), decodeServiceDiscoveryRequest, encodeResponse, opts...)
+
+	r.Handle("/sd_health", consulsdHandler).Methods("GET")
+	r.Handle("/metrics", stdprometheus.Handler()).Methods("GET")
+
 	for _, v := range handlers {
-		http.Handle(v.pattern, v.handler)
+		r.Handle(v.pattern, v.handler).Methods(v.method)
 	}
+
+	return r
 }
 
 //

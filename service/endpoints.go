@@ -6,7 +6,7 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func makeUppercaseEndpoint(svc Service) endpoint.Endpoint {
+func makePostUppercaseEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(uppercaseRequest)
 		v, err := svc.Uppercase(req.S)
@@ -17,7 +17,7 @@ func makeUppercaseEndpoint(svc Service) endpoint.Endpoint {
 	}
 }
 
-func makeCountEndpoint(svc Service) endpoint.Endpoint {
+func makePostCountEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(countRequest)
 		v := svc.Count(req.S)
