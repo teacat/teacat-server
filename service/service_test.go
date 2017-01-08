@@ -23,7 +23,7 @@ func TestUppercase(t *testing.T) {
 	}
 	{
 		body := `{"s": ""}`
-		expected := `{"status":"error","code":"str_empty","message":"The string is empty.","payload":null}`
+		expected := `{"status":"error","code":"string_empty","message":"The string is empty.","payload":null}`
 		resp, _ := testFunction("POST", "/uppercase", body)
 
 		assert.Equal(t, expected, resp, "Uppercase() cannot tell the error.")
