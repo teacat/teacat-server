@@ -2,79 +2,89 @@ package main
 
 import (
 	"bytes"
+	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	kitlog "github.com/go-kit/kit/log"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
 )
 
 var (
-	svc Service
-	ctx context.Context
+	testSvc    Service
+	testCtx    context.Context
+	testLogger kitlog.Logger
 )
 
 func init() {
 	listenPort := ":8080"
-	resetDB := false
 
 	// Create the logger with the specified listen port.
-	logger := createLogger(&listenPort)
+	testLogger := createLogger(&listenPort)
 	// Create the database connection.
 	db := createDatabase()
-	//
-	s := createStore(resetDB, db)
-	//
+	// Create the store with the database connection.
+	s := createStore(false, db)
+	// Create the event store.
 	es := createEventStore()
 
 	// Create the main service with what it needs.
+	svcLocal, ctxLocal, muxLocal := createService(testLogger, es, s)
+	testSvc, testCtx = svcLocal, ctxLocal
 
-	// Create the main service with what it needs.
-	svcLocal, ctxLocal, muxLocal := createService(logger, es, s)
-	svc, ctx = svcLocal, ctxLocal
-
-	registerService(logger)
+	// Sleep a little bit till we registered to the sd.
 	time.Sleep(time.Second * 1)
-	http.Handle("/", muxLocal)
-	go http.ListenAndServe(listenPort, nil)
+	// Start the service and listening to the requests and let the mux router handles every things.
+	go http.ListenAndServe(listenPort, muxLocal)
 }
 
+// testFunction sends the JSON request, and received the JSON response.
 func testFunction(method string, pattern string, body string) (string, error) {
 
+	// Converts the byte array to json
 	b := bytes.NewReader([]byte(body))
 	req, err := http.NewRequest(method, os.Getenv("KITSVC_URL")+pattern, b)
 	req.Header.Set("Content-Type", "application/json")
 
+	// Send the request.
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	defer resp.Body.Close()
 
+	// Converts the JSON response to string.
 	buf := new(bytes.Buffer)
 	if _, err := buf.ReadFrom(resp.Body); err != nil {
-		panic(err)
+		return "", err
 	}
+	// Removes the newline symbol in the end of the string.
 	s := strings.TrimSpace(buf.String())
 
 	return s, err
 }
 
+// TestES tests the event store.
 func TestES(t *testing.T) {
 	es := createEventStore()
-	go setEventSubscription(es, []eventListener{
+	randomEvent := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	go setEventSubscription(es, testLogger, []eventListener{
 		{
-			event:   "xxxxxxxxxxx",
-			body:    make(map[string]interface{}),
-			meta:    make(map[string]string),
-			handler: svc.CatchEvent,
+			event:   strconv.Itoa(randomEvent.Intn(999999)),
+			body:    make(H),
+			meta:    make(H),
+			handler: testSvc.CatchUppercase,
 		}})
 }
 
+// TestServiceDiscoveryMessage tests the health check handler for service discovery server.
 func TestServiceDiscoveryMessage(t *testing.T) {
 	{
 		body := ``
@@ -85,6 +95,7 @@ func TestServiceDiscoveryMessage(t *testing.T) {
 	}
 }
 
+// TestDatabase tests the database connection.
 func TestDatabase(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
@@ -92,10 +103,11 @@ func TestDatabase(t *testing.T) {
 		}
 	}()
 
+	// Test the database migration.
 	db := createDatabase()
 	createStore(true, db)
 
+	// Test the incorrect host.
 	os.Setenv("KITSVC_DATABASE_HOST", "xxxxxx")
 	createDatabase()
-
 }
