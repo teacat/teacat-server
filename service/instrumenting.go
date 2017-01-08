@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Count records the instrument about the Count function of the service.
+// Count records the instruments of the Count function of the service.
 func (mw InstrumentingMiddleware) Count(s string) (n int) {
 	defer func(begin time.Time) {
 		lvs := []string{"method", "count", "error", "false"}
@@ -18,7 +18,7 @@ func (mw InstrumentingMiddleware) Count(s string) (n int) {
 	return
 }
 
-// Uppercase records the instrument about the Uppercase function of the service.
+// Uppercase records the instrument of the Uppercase function of the service.
 func (mw InstrumentingMiddleware) Uppercase(s string) (output string, err error) {
 	defer func(begin time.Time) {
 		lvs := []string{"method", "uppercase", "error", fmt.Sprint(err != nil)}
