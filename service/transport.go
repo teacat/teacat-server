@@ -9,7 +9,7 @@ import (
 	httptransport "github.com/go-kit/kit/transport/http"
 )
 
-// serviceHandlers returns the handlers that deal with the service.
+// serviceHandlers returns the service handlers.
 func serviceHandlers(ctx context.Context, opts []httptransport.ServerOption, svc Service) []serviceHandler {
 
 	uppercaseHandler := httptransport.NewServer(ctx, makePostUppercaseEndpoint(svc), decodeUppercaseRequest, encodeResponse, opts...)
@@ -29,17 +29,19 @@ func serviceHandlers(ctx context.Context, opts []httptransport.ServerOption, svc
 	}
 }
 
+// eventListeners returns the event handlers.
 func eventListeners(svc Service) []eventListener {
 	return []eventListener{
 		{
-			event:   "HelloWorld",
-			body:    make(map[string]interface{}),
-			meta:    make(map[string]string),
-			handler: svc.CatchEvent,
+			event:   "uppercase",
+			body:    make(H),
+			meta:    make(H),
+			handler: svc.CatchUppercase,
 		},
 	}
 }
 
+// decodeCountRequest decodes the request of the Count operation.
 func decodeCountRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	var request countRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -48,6 +50,7 @@ func decodeCountRequest(_ context.Context, r *http.Request) (interface{}, error)
 	return request, nil
 }
 
+// decodeUppercaseRequest decodes the request of the Uppercase operation.
 func decodeUppercaseRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	var request uppercaseRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
