@@ -2,7 +2,7 @@
   <img src="https://cloud.githubusercontent.com/assets/7308718/21562106/97c9ad20-ceb0-11e6-960a-664fa507bd68.png" alt="kitsvc" width="60">
   <br><br><strong>KitSvc</strong> 是一個 Go 的單個微服務初始包 <br>提供了 Go kit、Consul、Prometheus 相關模塊和 Gorm 與 NSQ。（<a href="https://github.com/TeaMeow/KitGate">依賴 KitGate</a>）
 </p>
-
+# WIP 尚未完成
 ## 特色
 
 - Go kit
