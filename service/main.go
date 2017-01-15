@@ -124,9 +124,9 @@ func createInstruMiddleware() ServiceMiddleware {
 // from the event store.
 type eventListener struct {
 	event   string
-	body    map[string]interface{}
+	body    interface{}
 	meta    map[string]interface{}
-	handler func(map[string]interface{}, map[string]interface{})
+	handler func(interface{}, map[string]interface{})
 }
 
 // createEventStore creates a client of the event store.
@@ -185,7 +185,7 @@ func setEventSubscription(client *goes.Client, logger kitlog.Logger, listeners [
 					}
 
 					// When there are no more event in the stream, set LongPoll.
-					// The server will wait for 15 seconds in this case or until
+					// The server will wait for 5 seconds in this case or until
 					// events become available on the stream.
 					reader.LongPoll(5)
 
@@ -214,13 +214,13 @@ func setEventSubscription(client *goes.Client, logger kitlog.Logger, listeners [
 				// Mapping the event data.
 				err := reader.Scan(&v.body, &v.meta)
 				if err != nil {
-					panic(err)
+					//panic(err)
 				}
 
 				// Skip if the body or the meta is empty (might be the empty one which we created for the new stream).
-				if len(v.body) == 0 {
-					continue
-				}
+				//if len(v.body) == 0 {
+				//	continue
+				//}
 
 				// Call to the event handler.
 				v.handler(v.body, v.meta)

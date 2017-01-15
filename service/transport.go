@@ -6,6 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/TeaMeow/KitSvc/service/event"
 	httptransport "github.com/go-kit/kit/transport/http"
 )
 
@@ -34,7 +35,7 @@ func eventListeners(svc Service) []eventListener {
 	return []eventListener{
 		{
 			event:   "uppercase",
-			body:    make(H),
+			body:    &event.String{},
 			meta:    make(H),
 			handler: svc.CatchUppercase,
 		},

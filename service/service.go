@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/jetbasrawi/go.geteventstore"
+	"github.com/TeaMeow/KitSvc/service/event"
 )
 
 // Error codes returned by failures
@@ -29,7 +29,7 @@ var (
 type Service interface {
 	Uppercase(string) (string, error)
 	Count(string) int
-	CatchUppercase(map[string]interface{}, map[string]interface{})
+	CatchUppercase(interface{}, map[string]interface{})
 }
 
 // Count counts the length of the string.
@@ -49,13 +49,11 @@ func (svc service) Uppercase(s string) (string, error) {
 	// Create the string record in the database.
 	svc.Store.CreateString(s, u)
 
-	// Publish the uppercase event to the event store.
-	if err := svc.ES.NewStreamWriter("uppercase").Append(nil, goes.NewEvent(
-		"",
-		"",
-		H{"input": s, "output": u}.MapString(),
-		H{}.MapString(),
-	)); err != nil {
+	//
+	option := event.Option{Client: svc.ES, Stream: "uppercase", Meta: nil}
+	data := event.String{Input: s, Output: u}
+
+	if err := data.Send(option); err != nil {
 		return "", Err{Message: ErrEvent}
 	}
 
@@ -67,7 +65,9 @@ func (svc service) Uppercase(s string) (string, error) {
 }
 
 // CatchUppercase catches the uppercase event, and print the event data.
-func (svc service) CatchUppercase(body map[string]interface{}, meta map[string]interface{}) {
+func (svc service) CatchUppercase(body interface{}, meta map[string]interface{}) {
+	b := body.(*event.String)
+
 	fmt.Println("Event received:")
-	fmt.Println("Input:" + body["input"].(string) + " | Output:" + body["output"].(string))
+	fmt.Println("Input:" + b.Input + " | Output:" + b.Output)
 }
