@@ -1,6 +1,5 @@
 package model
 
-// User
 type User struct {
 	ID       int
 	Username string `gorm:"not null"`
