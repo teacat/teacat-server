@@ -3,9 +3,10 @@ package main
 import (
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/TeaMeow/KitSvc/event"
+	"github.com/TeaMeow/KitSvc/module/event"
 	"github.com/TeaMeow/KitSvc/router"
 	"github.com/TeaMeow/KitSvc/router/middleware"
 	"github.com/codegangsta/cli"
@@ -169,11 +170,34 @@ func server(c *cli.Context) error {
 	// Start to listening the incoming requests.
 	go http.Serve(listener, serviceHandler)
 
-	// And capture the events.
+	// Wait for the server is ready to serve.
+	if err := pingServer(c); err != nil {
+		logrus.Errorln(err)
+		logrus.Fatalln("The router has no response, or it might took too long to startup.")
+	}
+
+	// And capturing the events.
 	go event.Capture(c, eventHandler)
 
 	// And the service discovery.
-	// go sd.Wait()
+	// go sd.Register()
+}
+
+// pingServer pings the http server to make sure the router is currently working.
+func pingServer(c *cli.Context) {
+	for i := 0; i < 30; i++ {
+
+		// Ping the server by sending a GET request to `/health`.
+		resp, err = http.Get(c.String("url") + "/health")
+		if err == nil {
+			if resp.StatusCode == 200 {
+				return
+			}
+		}
+		logrus.Infof("Waiting for the router, retry in 1 second.")
+		time.Sleep(time.Second)
+	}
+	return
 }
 
 func main() {

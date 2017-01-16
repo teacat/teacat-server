@@ -21,12 +21,17 @@ func Load(middleware ...gin.HandlerFunc) (http.Handler, *eventutil.Engine) {
 	g.DELETE("/user/:id", server.DeleteUser)
 	g.PUT("/user/:id", server.UpdateUser)
 
+	// Health check handler.
+	g.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"pong": "pong",
+		})
+	})
+
 	// Event handlers.
 	e := eventutil.New()
-	e.POST("/event_store/user.create/", "user.create", server.CreateUser)
+	e.POST("/event-store/user.create/", "user.create", server.CreateUser)
 
-	// Service handlers.
-	//e.GET("/kit_sd_health", server.)
 	//e.GET("/kit_metrics", server.)
 
 	return g, e

@@ -1,0 +1,29 @@
+syntax = "proto3";
+package proto;
+
+message GetUserRequest {
+
+}
+message GetUserResponse {
+    string username = 1;
+    string password = 2;
+}
+message CreateUserRequest {
+    string username = 3;
+    string password = 4;
+}
+message CreateUserResponse {
+    int64 id = 5;
+}
+message UpdateUserRequest {
+    string username = 6;
+    string password = 7;
+}
+message UpdateUserResponse {
+    int64 id = 8;
+}
+message DeleteUserRequest {
+}
+message DeleteUserResponse {
+    bool success = 9;
+}
