@@ -37,19 +37,13 @@ func register(c *cli.Context, client *api.Client) {
 	id := uuid.NewV4().String()
 
 	// The information of the health check.
-	check := &api.AgentServiceCheck{
-		HTTP:     c.String("url") + "/health",
-		Interval: c.String("consul-check_interval"),
-		Timeout:  c.String("consul-check_timeout"),
-	}
 
 	// The service information.
 	info := &api.AgentServiceRegistration{
-		ID:    id,
-		Name:  c.String("name"),
-		Port:  c.Int("port"),
-		Tags:  c.StringSlice("consul-tags"),
-		Check: check,
+		ID:   id,
+		Name: c.String("name"),
+		Port: c.Int("port"),
+		Tags: c.StringSlice("consul-tags"),
 	}
 
 	// Register the service to the service registry.
@@ -57,6 +51,37 @@ func register(c *cli.Context, client *api.Client) {
 		logrus.Errorln(err)
 		logrus.Fatalln("Error occurred while registering to the service registry (Is consul running?).")
 	}
+
+	check := &api.AgentCheckRegistration{
+		Name:      "Web",
+		Notes:     "Wow",
+		ServiceID: id,
+		AgentServiceCheck: api.AgentServiceCheck{
+			HTTP:     c.String("url") + "/health",
+			Interval: c.String("consul-check_interval"),
+			Timeout:  c.String("consul-check_timeout"),
+		},
+	}
+
+	//
+
+	client.Agent().CheckRegister(check)
+
+	//
+
+	check2 := &api.AgentCheckRegistration{
+		Name:      "Disk",
+		Notes:     "Wow",
+		ServiceID: id,
+		AgentServiceCheck: api.AgentServiceCheck{
+			HTTP:     c.String("url") + "/disk",
+			Notes:    "Critical 5%, warning 10% free",
+			Interval: c.String("consul-check_interval"),
+			Timeout:  c.String("consul-check_timeout"),
+		},
+	}
+
+	client.Agent().CheckRegister(check2)
 
 	// Deregister the service when exiting the program.
 	deregister(client, id)
@@ -74,6 +99,8 @@ func deregister(client *api.Client, id string) {
 			if err := client.Agent().ServiceDeregister(id); err != nil {
 				logrus.Errorln(err)
 				logrus.Fatalln("Cannot deregister the service from the service registry.")
+			} else {
+				logrus.Infoln("The service has been deregistered from the service registry successfully.")
 			}
 			os.Exit(1)
 		}
