@@ -14,8 +14,12 @@ func Wait(c *cli.Context, played <-chan bool) {
 	// Block until the events were all replayed.
 	<-played
 
+	logrus.Infoln("The events were all replayed, trying to register to the server registry.")
+
 	client := newClient(c)
 	register(c, client)
+
+	logrus.Infoln("The service has been registered to the server registry successfully.")
 }
 
 func newClient(c *cli.Context) *api.Client {
@@ -49,7 +53,10 @@ func register(c *cli.Context, client *api.Client) {
 	}
 
 	// Register the service to the service registry.
-	client.Agent().ServiceRegister(info)
+	if err := client.Agent().ServiceRegister(info); err != nil {
+		logrus.Errorln(err)
+		logrus.Fatalln("Error occurred while registering to the service registry (Is consul running?).")
+	}
 
 	// Deregister the service when exiting the program.
 	deregister(client, id)
@@ -64,7 +71,10 @@ func deregister(client *api.Client, id string) {
 
 	go func() {
 		for range ch {
-			client.Agent().ServiceDeregister(id)
+			if err := client.Agent().ServiceDeregister(id); err != nil {
+				logrus.Errorln(err)
+				logrus.Fatalln("Cannot deregister the service from the service registry.")
+			}
 			os.Exit(1)
 		}
 	}()

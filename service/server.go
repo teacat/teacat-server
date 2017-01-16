@@ -13,7 +13,7 @@ import (
 	"github.com/codegangsta/cli"
 )
 
-func server(c *cli.Context) {
+func server(c *cli.Context) error {
 
 	// The gin router and the event handlers.
 	serviceHandler, eventHandler := router.Load(
@@ -21,22 +21,34 @@ func server(c *cli.Context) {
 		middleware.Logging(),
 	)
 
+	isReady := make(chan bool)
+	isPlayed := make(chan bool)
+
+	// Capturing the events when the router was ready in the goroutine.
+	go event.Capture(c, eventHandler, isPlayed, isReady)
+
+	// And register the service to the service registry when the events were replayed in the goroutine.
+	go sd.Wait(c, isPlayed)
+
+	// We only do those things when the router is ready to use.
+	go func() {
+		// To check the router is good to go,
+		// we ping the server by sending the GET request to the router.
+		if err := pingServer(c); err != nil {
+			logrus.Errorln(err)
+			logrus.Fatalln("The router has no response, or it might took too long to startup.")
+		}
+
+		logrus.Infoln("The router has been deployed successfully.")
+		// Send `true` to the `isReady` channel if the router is ready to use.
+		isReady <- true
+	}()
+
 	// Start to listening the incoming requests.
-	go http.ListenAndServe(c.String("addr"), serviceHandler)
-
-	// Wait for the server is ready to serve.
-	if err := pingServer(c); err != nil {
-		logrus.Errorln(err)
-		logrus.Fatalln("The router has no response, or it might took too long to startup.")
-	}
-
-	evtPlayed := make(chan bool)
-
-	// Then we capturing the events.
-	go event.Capture(c, eventHandler, evtPlayed)
-
-	// And we register the service to the service registry.
-	go sd.Wait(c, evtPlayed)
+	return http.ListenAndServe(
+		c.String("addr"),
+		serviceHandler,
+	)
 }
 
 // pingServer pings the http server to make sure the router is currently working.

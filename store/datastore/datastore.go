@@ -26,7 +26,7 @@ func cleanDatabase(db *gorm.DB) {
 
 // Open opens a new database connection and returns a store.
 func Open(user string, password string, host string, name string, charset string, parseTime bool, loc string) *datastore {
-	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=%s&parseTime=%s&loc=%s",
+	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=%s&parseTime=%t&loc=%s",
 		user, password, host, name, charset, parseTime, loc,
 	))
 	if err != nil {

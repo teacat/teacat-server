@@ -9,6 +9,7 @@ import (
 func main() {
 	app := cli.NewApp()
 	app.Name = "service"
+	app.Version = "1.0"
 	app.Usage = "starts the service daemon."
 	app.Action = func(c *cli.Context) {
 		server(c)
@@ -44,11 +45,11 @@ func main() {
 			Name:   "usage",
 			Usage:  "the usage of the service, exposed for service discovery.",
 		},
-		cli.StringFlag{
-			EnvVar: "KITSVC_VERSION",
-			Name:   "version",
-			Usage:  "the version of the service.",
-		},
+		//cli.StringFlag{
+		//	EnvVar: "KITSVC_VERSION",
+		//	Name:   "version",
+		//	Usage:  "the version of the service.",
+		//},
 
 		// Database flags.
 		cli.StringFlag{

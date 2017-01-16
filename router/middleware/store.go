@@ -14,7 +14,7 @@ func Store(c *cli.Context) gin.HandlerFunc {
 		c.String("database-host"),
 		c.String("database-name"),
 		c.String("database-charset"),
-		c.Bool("database-parseTime"),
+		c.Bool("database-parse_time"),
 		c.String("database-loc"),
 	)
 
