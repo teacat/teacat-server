@@ -4,17 +4,30 @@ import (
 	"net/http"
 
 	"github.com/TeaMeow/KitSvc/server"
+	"github.com/TeaMeow/KitSvc/shared/eventutil"
 	"github.com/gin-gonic/gin"
 )
 
-func Load(middleware ...gin.HandlerFunc) http.Handler {
-	e := gin.New()
-	e.Use(middleware...)
+func Load(middleware ...gin.HandlerFunc) (http.Handler, *eventutil.Engine) {
 
-	e.POST("/user", server.CreateUser)
-	e.GET("/user/:id", server.GetUser)
-	e.DELETE("/user/:id", server.DeleteUser)
-	e.PUT("/user/:id", server.UpdateUser)
+	// Gin engine and middlewares.
+	g := gin.Default()
+	g.Use(gin.Recovery())
+	g.Use(middleware...)
 
-	return e
+	// Command routes.
+	g.POST("/user", server.CreateUser)
+	g.GET("/user/:id", server.GetUser)
+	g.DELETE("/user/:id", server.DeleteUser)
+	g.PUT("/user/:id", server.UpdateUser)
+
+	// Event handlers.
+	e := eventutil.New()
+	e.POST("/event_store/user.create/", "user.create", server.CreateUser)
+
+	// Service handlers.
+	//e.GET("/kit_sd_health", server.)
+	//e.GET("/kit_metrics", server.)
+
+	return g, e
 }

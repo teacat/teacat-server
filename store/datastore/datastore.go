@@ -2,7 +2,6 @@ package datastore
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/TeaMeow/KitSvc/model"
@@ -26,15 +25,9 @@ func cleanDatabase(db *gorm.DB) {
 }
 
 // Open opens a new database connection and returns a store.
-func Open() *datastore {
+func Open(user string, password string, host string, name string, charset string, parseTime bool, loc string) *datastore {
 	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=%s&parseTime=%s&loc=%s",
-		os.Getenv("KITSVC_DATABASE_USER"),
-		os.Getenv("KITSVC_DATABASE_PASSWORD"),
-		os.Getenv("KITSVC_DATABASE_HOST"),
-		os.Getenv("KITSVC_DATABASE_NAME"),
-		os.Getenv("KITSVC_DATABASE_CHARSET"),
-		os.Getenv("KITSVC_DATABASE_PARSE_TIME"),
-		os.Getenv("KITSVC_DATABASE_LOC"),
+		user, password, host, name, charset, parseTime, loc,
 	))
 	if err != nil {
 		logrus.Errorln(err)
