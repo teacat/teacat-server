@@ -1,6 +1,8 @@
 package event
 
 import (
+	"bytes"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -25,14 +27,13 @@ func newClient(c *cli.Context) *goes.Client {
 
 func Capture(c *cli.Context, e *eventutil.Engine, played chan<- bool) {
 
+	// The `sent`` toggle used to make sure if we have sent the `played`` indicator or not.
 	sent := false
-
 	// Create a new client.
 	client := newClient(c)
 
 	// Each of the listener.
 	for _, l := range e.Listeners {
-
 		// Create the the stream reader for listening the specified stream.
 		reader := client.NewStreamReader(l.Stream)
 
@@ -83,9 +84,28 @@ func Capture(c *cli.Context, e *eventutil.Engine, played chan<- bool) {
 					logrus.Fatalln("Error occurred while reading the incoming event.")
 				}
 
-				// Receivied the event.
+				// We received the event, and we're going to make a http request,
+				// send it to out own Gin router.
 			} else {
+				// Get the event body.
+				json := reader.EventResponse().Event.Data.([]byte)
 
+				// Prepare to send the event data to the gin router.
+				req, _ := http.NewRequest(l.Method, c.String("url")+l.Path, bytes.NewBuffer(json))
+				req.Header.Set("Content-Type", "application/json")
+
+				// Send the request via the HTTP client.
+				client := &http.Client{}
+				resp, err := client.Do(req)
+				if err != nil {
+					logrus.Errorln(reader.Err())
+					logrus.Fatalln("Error occurred while sending the event to self router.")
+				}
+				defer resp.Body.Close()
+
+				if resp.StatusCode != 200 {
+					logrus.Infoln("The event has been recevied by the router, but the status code wasn't 200.")
+				}
 			}
 		}
 	}

@@ -1,26 +1,19 @@
 package main
 
 import (
-	"net/http"
-	"time"
+	"os"
 
-	"github.com/Sirupsen/logrus"
-	"github.com/TeaMeow/KitSvc/module/event"
-	"github.com/TeaMeow/KitSvc/module/sd"
-	"github.com/TeaMeow/KitSvc/router"
-	"github.com/TeaMeow/KitSvc/router/middleware"
 	"github.com/codegangsta/cli"
 )
 
-var serverCmd = cli.Command{
-	Name:  "service",
-	Usage: "starts the service daemon.",
-	Action: func(c *cli.Context) {
-		if err := server(c); err != nil {
-			logrus.Fatalln(err)
-		}
-	},
-	Flags: []cli.Flag{
+func main() {
+	app := cli.NewApp()
+	app.Name = "service"
+	app.Usage = "starts the service daemon."
+	app.Action = func(c *cli.Context) {
+		server(c)
+	}
+	app.Flags = []cli.Flag{
 
 		// Common flags.
 		cli.StringFlag{
@@ -149,52 +142,7 @@ var serverCmd = cli.Command{
 				"micro",
 			},
 		},
-	},
-}
-
-func server(c *cli.Context) error {
-
-	// The gin router and the event handlers.
-	serviceHandler, eventHandler := router.Load(
-		middleware.Store(c),
-		middleware.Logging(),
-	)
-
-	// Start to listening the incoming requests.
-	go http.ListenAndServe(c.String("addr"), serviceHandler)
-
-	// Wait for the server is ready to serve.
-	if err := pingServer(c); err != nil {
-		logrus.Errorln(err)
-		logrus.Fatalln("The router has no response, or it might took too long to startup.")
 	}
 
-	evtPlayed := make(chan bool)
-
-	// Then we capturing the events.
-	go event.Capture(c, eventHandler, evtPlayed)
-
-	// And we register the service to the service registry.
-	go sd.Wait(c, evtPlayed)
-}
-
-// pingServer pings the http server to make sure the router is currently working.
-func pingServer(c *cli.Context) {
-	for i := 0; i < 30; i++ {
-
-		// Ping the server by sending a GET request to `/health`.
-		resp, err = http.Get(c.String("url") + "/health")
-		if err == nil {
-			if resp.StatusCode == 200 {
-				return
-			}
-		}
-		logrus.Infof("Waiting for the router, retry in 1 second.")
-		time.Sleep(time.Second)
-	}
-	return
-}
-
-func main() {
-
+	app.Run(os.Args)
 }

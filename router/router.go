@@ -29,10 +29,10 @@ func Load(middleware ...gin.HandlerFunc) (http.Handler, *eventutil.Engine) {
 	})
 
 	// Event handlers.
-	e := eventutil.New()
+	e := eventutil.New(g)
 	e.POST("/event-store/user.create/", "user.create", server.CreateUser)
 
 	//e.GET("/kit_metrics", server.)
 
-	return g, e
+	return e.Gin, e
 }
