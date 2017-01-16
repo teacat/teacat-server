@@ -1,12 +1,12 @@
 package main
 
 import (
-	"net"
 	"net/http"
 	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/TeaMeow/KitSvc/module/event"
+	"github.com/TeaMeow/KitSvc/module/sd"
 	"github.com/TeaMeow/KitSvc/router"
 	"github.com/TeaMeow/KitSvc/router/middleware"
 	"github.com/codegangsta/cli"
@@ -131,13 +131,13 @@ var serverCmd = cli.Command{
 		// Consul flags.
 		cli.StringFlag{
 			EnvVar: "KITSVC_CONSUL_CHECK_INTERVAL",
-			Name:   "consul-namespace",
+			Name:   "consul-check_interval",
 			Usage:  "the interval of consul health check.",
 			Value:  "10s",
 		},
 		cli.StringFlag{
 			EnvVar: "KITSVC_CONSUL_CHECK_TIMEOUT",
-			Name:   "consul-subsystem",
+			Name:   "consul-check_timeout",
 			Usage:  "the timeout of consul health check.",
 			Value:  "1s",
 		},
@@ -160,15 +160,8 @@ func server(c *cli.Context) error {
 		middleware.Logging(),
 	)
 
-	// Prepare the http listener.
-	listener, err := net.Listen("http", c.String("addr"))
-	if err != nil {
-		logrus.Errorln(err)
-		logrus.Fatalln("Error occurred while starting the router.")
-	}
-
 	// Start to listening the incoming requests.
-	go http.Serve(listener, serviceHandler)
+	go http.ListenAndServe(c.String("addr"), serviceHandler)
 
 	// Wait for the server is ready to serve.
 	if err := pingServer(c); err != nil {
@@ -176,11 +169,13 @@ func server(c *cli.Context) error {
 		logrus.Fatalln("The router has no response, or it might took too long to startup.")
 	}
 
-	// And capturing the events.
-	go event.Capture(c, eventHandler)
+	evtPlayed := make(chan bool)
 
-	// And the service discovery.
-	// go sd.Register()
+	// Then we capturing the events.
+	go event.Capture(c, eventHandler, evtPlayed)
+
+	// And we register the service to the service registry.
+	go sd.Wait(c, evtPlayed)
 }
 
 // pingServer pings the http server to make sure the router is currently working.

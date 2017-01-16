@@ -23,15 +23,18 @@ func newClient(c *cli.Context) *goes.Client {
 	return client
 }
 
-func Capture(c *cli.Context, e *eventutil.Engine) {
+func Capture(c *cli.Context, e *eventutil.Engine, played chan<- bool) {
+
+	sent := false
 
 	// Create a new client.
 	client := newClient(c)
 
 	// Each of the listener.
-	for _, v := range e.Listeners {
-		// Create the the stream reader for listening the specified event(stream).
-		reader := client.NewStreamReader(v.event)
+	for _, l := range e.Listeners {
+
+		// Create the the stream reader for listening the specified stream.
+		reader := client.NewStreamReader(l.Stream)
 
 		// Read the next event.
 		for reader.Next() {
@@ -47,11 +50,9 @@ func Capture(c *cli.Context, e *eventutil.Engine) {
 					// and it's time to register the service to the sd because we're ready.
 					if !sent {
 						// Send the logger to the played channel because we need the logger.
-						played <- logger
+						played <- true
 						// Set the sent toggle as true so we won't send the logger to the channel again.
 						sent = true
-						// Close the unused channel.
-						close(played)
 					}
 
 					// When there are no more events in the stream, set LongPoll.
@@ -61,7 +62,7 @@ func Capture(c *cli.Context, e *eventutil.Engine) {
 
 				// Create an empty event if the stream hasn't been created.
 				case *goes.ErrNotFound:
-					writer := client.NewStreamWriter(v.event)
+					writer := client.NewStreamWriter(l.Stream)
 
 					// Create am empty stream.
 					err := writer.Append(nil, goes.NewEvent("", "", map[string]string{}, map[string]string{}))
