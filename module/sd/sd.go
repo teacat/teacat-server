@@ -53,8 +53,7 @@ func register(c *cli.Context, client *api.Client) {
 	}
 
 	check := &api.AgentCheckRegistration{
-		Name:      "Web",
-		Notes:     "Wow",
+		Name:      "Service Router",
 		ServiceID: id,
 		AgentServiceCheck: api.AgentServiceCheck{
 			HTTP:     c.String("url") + "/health",
@@ -70,8 +69,8 @@ func register(c *cli.Context, client *api.Client) {
 	//
 
 	check2 := &api.AgentCheckRegistration{
-		Name:      "Disk",
-		Notes:     "Wow",
+		Name:      "Disk Usage",
+		Notes:     "Critical 5%, warning 10% free",
 		ServiceID: id,
 		AgentServiceCheck: api.AgentServiceCheck{
 			HTTP:     c.String("url") + "/disk",
@@ -82,6 +81,22 @@ func register(c *cli.Context, client *api.Client) {
 	}
 
 	client.Agent().CheckRegister(check2)
+
+	//
+
+	check3 := &api.AgentCheckRegistration{
+		Name:      "Load Average",
+		Notes:     "Critical load average 2, warning load average 1",
+		ServiceID: id,
+		AgentServiceCheck: api.AgentServiceCheck{
+			HTTP:     c.String("url") + "/cpu",
+			Notes:    "Critical 5%, warning 10% free",
+			Interval: c.String("consul-check_interval"),
+			Timeout:  c.String("consul-check_timeout"),
+		},
+	}
+
+	client.Agent().CheckRegister(check3)
 
 	// Deregister the service when exiting the program.
 	deregister(client, id)
