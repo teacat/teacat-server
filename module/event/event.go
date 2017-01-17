@@ -52,7 +52,7 @@ func Capture(c *cli.Context, e *eventutil.Engine, played chan<- bool, ready <-ch
 
 		go func(l eventutil.Listener) {
 
-			// The `sent`` toggle used to make sure if we have sent the `played`` indicator or not.
+			// The `sent` toggle used to make sure if we have sent the `played` indicator or not.
 			sent := false
 
 			// Read the next event.
@@ -107,6 +107,12 @@ func Capture(c *cli.Context, e *eventutil.Engine, played chan<- bool, ready <-ch
 				} else {
 					// Get the event body.
 					json, _ := reader.EventResponse().Event.Data.(*json.RawMessage).MarshalJSON()
+
+					// Skip the empty json event (that might be the one which we used to create the new stream).
+					if string(json) == "{}" {
+						logrus.Infof("Received the empty event from the `%s`.", l.Stream)
+						continue
+					}
 
 					// Prepare to send the event data to the gin router.
 					req, _ := http.NewRequest(l.Method, c.String("url")+l.Path, bytes.NewBuffer(json))

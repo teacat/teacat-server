@@ -56,7 +56,7 @@ func pingServer(c *cli.Context) (err error) {
 	for i := 0; i < 30; i++ {
 
 		// Ping the server by sending a GET request to `/health`.
-		resp, err := http.Get(c.String("url") + "/health")
+		resp, err := http.Get(c.String("url") + "/sd/health")
 		if err == nil && resp.StatusCode == 200 {
 			return nil
 		}

@@ -10,6 +10,7 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+// Wait waits until the events were all replayed, then create the client and register the service.
 func Wait(c *cli.Context, played <-chan bool) {
 	// Block until the events were all replayed.
 	<-played
@@ -19,9 +20,10 @@ func Wait(c *cli.Context, played <-chan bool) {
 	client := newClient(c)
 	register(c, client)
 
-	logrus.Infoln("The service has been registered to the server registry successfully.")
+	logrus.Infoln("The service has been registered to the server registry successfully, the service is now ready to work.")
 }
 
+// newClient creates a new Consul api client.
 func newClient(c *cli.Context) *api.Client {
 	apiConfig := api.DefaultConfig()
 	apiClient, err := api.NewClient(apiConfig)
@@ -34,9 +36,9 @@ func newClient(c *cli.Context) *api.Client {
 
 // register register the service to the service registry.
 func register(c *cli.Context, client *api.Client) {
-	id := uuid.NewV4().String()
 
-	// The information of the health check.
+	// Create a random id.
+	id := uuid.NewV4().String()
 
 	// The service information.
 	info := &api.AgentServiceRegistration{
@@ -52,54 +54,60 @@ func register(c *cli.Context, client *api.Client) {
 		logrus.Fatalln("Error occurred while registering to the service registry (Is consul running?).")
 	}
 
-	check := &api.AgentCheckRegistration{
-		Name:      "Service Router",
-		ServiceID: id,
-		AgentServiceCheck: api.AgentServiceCheck{
-			HTTP:     c.String("url") + "/health",
-			Interval: c.String("consul-check_interval"),
-			Timeout:  c.String("consul-check_timeout"),
-		},
-	}
-
-	//
-
-	client.Agent().CheckRegister(check)
-
-	//
-
-	check2 := &api.AgentCheckRegistration{
-		Name:      "Disk Usage",
-		Notes:     "Critical 5%, warning 10% free",
-		ServiceID: id,
-		AgentServiceCheck: api.AgentServiceCheck{
-			HTTP:     c.String("url") + "/disk",
-			Notes:    "Critical 5%, warning 10% free",
-			Interval: c.String("consul-check_interval"),
-			Timeout:  c.String("consul-check_timeout"),
-		},
-	}
-
-	client.Agent().CheckRegister(check2)
-
-	//
-
-	check3 := &api.AgentCheckRegistration{
-		Name:      "Load Average",
-		Notes:     "Critical load average 2, warning load average 1",
-		ServiceID: id,
-		AgentServiceCheck: api.AgentServiceCheck{
-			HTTP:     c.String("url") + "/cpu",
-			Notes:    "Critical 5%, warning 10% free",
-			Interval: c.String("consul-check_interval"),
-			Timeout:  c.String("consul-check_timeout"),
-		},
-	}
-
-	client.Agent().CheckRegister(check3)
+	// Register the health checks.
+	registerChecks(c, client, id)
 
 	// Deregister the service when exiting the program.
 	deregister(client, id)
+}
+
+// registerChecks register the health check handlers to the service registry.
+func registerChecks(c *cli.Context, client *api.Client, id string) {
+	checks := []*api.AgentCheckRegistration{
+		{
+			Name:      "Service Router",
+			ServiceID: id,
+			AgentServiceCheck: api.AgentServiceCheck{
+				HTTP:     c.String("url") + "/sd/health",
+				Interval: c.String("consul-check_interval"),
+				Timeout:  c.String("consul-check_timeout"),
+			},
+		},
+		{
+			Name:      "Disk Usage",
+			Notes:     "Critical 5%, warning 10% free",
+			ServiceID: id,
+			AgentServiceCheck: api.AgentServiceCheck{
+				HTTP:     c.String("url") + "/sd/disk",
+				Interval: c.String("consul-check_interval"),
+				Timeout:  c.String("consul-check_timeout"),
+			},
+		},
+		{
+			Name:      "Load Average",
+			Notes:     "Critical load average 2, warning load average 1",
+			ServiceID: id,
+			AgentServiceCheck: api.AgentServiceCheck{
+				HTTP:     c.String("url") + "/sd/cpu",
+				Interval: c.String("consul-check_interval"),
+				Timeout:  c.String("consul-check_timeout"),
+			},
+		},
+		{
+			Name:      "RAM Usage",
+			Notes:     "Critical 5%, warning 10% free",
+			ServiceID: id,
+			AgentServiceCheck: api.AgentServiceCheck{
+				HTTP:     c.String("url") + "/sd/ram",
+				Interval: c.String("consul-check_interval"),
+				Timeout:  c.String("consul-check_timeout"),
+			},
+		},
+	}
+
+	for _, v := range checks {
+		client.Agent().CheckRegister(v)
+	}
 }
 
 // deregister watching the system signal, deregister the service from the service registry
