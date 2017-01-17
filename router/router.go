@@ -7,6 +7,7 @@ import (
 	"github.com/TeaMeow/KitSvc/server"
 	"github.com/TeaMeow/KitSvc/shared/eventutil"
 	"github.com/gin-gonic/gin"
+	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 )
 
 func Load(middleware ...gin.HandlerFunc) (http.Handler, *eventutil.Engine) {
@@ -16,7 +17,7 @@ func Load(middleware ...gin.HandlerFunc) (http.Handler, *eventutil.Engine) {
 	g.Use(gin.Recovery())
 	g.Use(middleware...)
 
-	// Command handlers.
+	// The common handlers.
 	g.POST("/user", server.CreateUser)
 	g.GET("/user/:id", server.GetUser)
 	g.DELETE("/user/:id", server.DeleteUser)
@@ -29,11 +30,14 @@ func Load(middleware ...gin.HandlerFunc) (http.Handler, *eventutil.Engine) {
 	g.GET("/sd/cpu", sd.CPUCheck)
 	g.GET("/sd/ram", sd.RAMCheck)
 
-	// Event handlers.
+	// The metrics handlers.
+	p := ginprometheus.NewPrometheus("gin")
+	p.Use(g)
+	//g.GET("/pt/metrics", promhttp.Handler)
+
+	// The event handlers.
 	e := eventutil.New(g)
 	e.POST("/es/user.create/", "user.create", server.CreateUser)
-
-	//e.GET("/kit_metrics", server.)
 
 	return e.Gin, e
 }

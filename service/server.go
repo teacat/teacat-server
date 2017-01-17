@@ -19,6 +19,7 @@ func server(c *cli.Context) error {
 	serviceHandler, eventHandler := router.Load(
 		middleware.Store(c),
 		middleware.Logging(),
+		//middleware.Instrumenting(),
 	)
 
 	isReady := make(chan bool)
