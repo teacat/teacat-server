@@ -45,6 +45,11 @@ func main() {
 			Name:   "usage",
 			Usage:  "the usage of the service, exposed for service discovery.",
 		},
+		cli.StringFlag{
+			EnvVar: "KITSVC_JWT_SECRET",
+			Name:   "jwt-secret",
+			Usage:  "the secert used to encode the json web token.",
+		},
 		//cli.StringFlag{
 		//	EnvVar: "KITSVC_VERSION",
 		//	Name:   "version",

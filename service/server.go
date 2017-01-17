@@ -17,9 +17,9 @@ func server(c *cli.Context) error {
 
 	// The gin router and the event handlers.
 	serviceHandler, eventHandler := router.Load(
+		c,
 		middleware.Store(c),
 		middleware.Logging(),
-		//middleware.Instrumenting(),
 	)
 
 	isReady := make(chan bool)
