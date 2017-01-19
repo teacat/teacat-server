@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/TeaMeow/KitSvc/module/sd"
-	"github.com/TeaMeow/KitSvc/router/middleware"
+	"github.com/TeaMeow/KitSvc/router/middleware/header"
 	"github.com/TeaMeow/KitSvc/server"
 	"github.com/TeaMeow/KitSvc/shared/eventutil"
 	"github.com/codegangsta/cli"
@@ -19,16 +19,22 @@ func Load(c *cli.Context, mw ...gin.HandlerFunc) (http.Handler, *eventutil.Engin
 
 	g.Use(gin.Logger())
 	g.Use(gin.Recovery())
+	g.Use(header.NoCache)
+	g.Use(header.Options)
+	g.Use(header.Secure)
 	g.Use(mw...)
 
 	p := ginprometheus.NewPrometheus("gin")
 	p.Use(g)
 
+	//middleware.JWT(c),
+
 	// The common handlers.
-	g.POST("/user", middleware.JWT(c), server.CreateUser)
-	g.GET("/user/:id", server.GetUser)
+	g.POST("/user", server.CreateUser)
+	g.GET("/user/:username", server.GetUser)
 	g.DELETE("/user/:id", server.DeleteUser)
 	g.PUT("/user/:id", server.UpdateUser)
+	g.POST("/auth", server.Login)
 
 	// The health check handlers
 	// for the service discovery.
