@@ -1,2 +1,2 @@
 syntax = "proto3";
-package proto;
+package protobuf;
