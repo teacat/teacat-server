@@ -16,12 +16,12 @@ type datastore struct {
 
 // setupDatabase initialize the database tables.
 func setupDatabase(db *gorm.DB) {
-	db.AutoMigrate(model.User{})
+	db.AutoMigrate(&model.User{}, &model.Permission{})
 }
 
 // cleanDatabase tear downs the database tables.
 func cleanDatabase(db *gorm.DB) {
-	db.DropTable(model.User{})
+	db.DropTable(&model.User{}, &model.Permission{})
 }
 
 // Open opens a new database connection and returns a store.
@@ -34,8 +34,8 @@ func Open(user string, password string, host string, name string, charset string
 		logrus.Fatalln("Database connection failed.")
 	}
 
-	setupDatabase(db)
 	cleanDatabase(db)
+	setupDatabase(db)
 
 	return &datastore{db}
 }
