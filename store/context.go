@@ -4,7 +4,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-const key = "store"
+const Key = "store"
 
 // Setter defines a context that enables setting values.
 type Setter interface {
@@ -13,11 +13,11 @@ type Setter interface {
 
 // FromContext returns the Store associated with this context.
 func FromContext(c context.Context) Store {
-	return c.Value(key).(Store)
+	return c.Value(Key).(Store)
 }
 
 // ToContext adds the Store to this context if it supports
 // the Setter interface.
 func ToContext(c Setter, store Store) {
-	c.Set(key, store)
+	c.Set(Key, store)
 }
