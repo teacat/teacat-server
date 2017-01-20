@@ -6,12 +6,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const configKey = "config"
+const ConfigKey = "config"
 
 func Config(cli *cli.Context) gin.HandlerFunc {
+	v := setupConfig(cli)
 	return func(c *gin.Context) {
-		c.Set(configKey, &model.Config{
-			JWTSecret: cli.String("jwt-secret"),
-		})
+		c.Set(ConfigKey, v)
+	}
+}
+
+func setupConfig(c *cli.Context) *model.Config {
+	return &model.Config{
+		JWTSecret: c.String("jwt-secret"),
 	}
 }
