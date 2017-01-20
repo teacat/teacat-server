@@ -1,10 +1,13 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
+	"github.com/TeaMeow/KitSvc/client"
 	"github.com/TeaMeow/KitSvc/model"
+	"github.com/TeaMeow/KitSvc/protobuf"
 	"github.com/TeaMeow/KitSvc/shared/auth"
 	"github.com/TeaMeow/KitSvc/shared/token"
 	"github.com/TeaMeow/KitSvc/store"
@@ -13,6 +16,15 @@ import (
 
 //
 func CreateUser(c *gin.Context) {
+
+	var t protobuf.CreateUserRequest
+	if err := c.Bind(&t); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+
+	fmt.Println(t.Username)
+
 	var u model.User
 	if err := c.Bind(&u); err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
@@ -32,6 +44,12 @@ func CreateUser(c *gin.Context) {
 //
 func GetUser(c *gin.Context) {
 	username := c.Param("username")
+
+	cli := client.NewClient("http://localhost:8080")
+	cli.PostUser(&model.User{
+		Username: "Wow",
+		Password: "wowowowowo",
+	})
 
 	if user, err := store.GetUser(c, username); err != nil {
 		c.String(http.StatusNotFound, "The user was not found.")

@@ -10,14 +10,8 @@ It is generated from these files:
 	request.proto
 
 It has these top-level messages:
-	GetUserRequest
-	GetUserResponse
 	CreateUserRequest
 	CreateUserResponse
-	UpdateUserRequest
-	UpdateUserResponse
-	DeleteUserRequest
-	DeleteUserResponse
 */
 package protobuf
 
