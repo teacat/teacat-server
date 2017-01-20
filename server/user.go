@@ -6,6 +6,7 @@ import (
 
 	"github.com/TeaMeow/KitSvc/model"
 	"github.com/TeaMeow/KitSvc/shared/auth"
+	"github.com/TeaMeow/KitSvc/shared/token"
 	"github.com/TeaMeow/KitSvc/store"
 	"github.com/gin-gonic/gin"
 )
@@ -48,6 +49,15 @@ func DeleteUser(c *gin.Context) {
 func UpdateUser(c *gin.Context) {
 	userID, _ := strconv.Atoi(c.Param("id"))
 
+	t, err := token.ParseRequest(c)
+	if err != nil {
+		c.String(400, "The token was incorrect.")
+	} else {
+		c.JSON(200, t)
+	}
+
+	return
+
 	if store.Can(c, &model.Permission{
 		Action:     model.PERM_EDIT,
 		ResourceID: userID,
@@ -70,11 +80,20 @@ func Login(c *gin.Context) {
 	d, err := store.GetUser(c, u.Username)
 	if err != nil {
 		c.String(http.StatusNotFound, "The user doesn't exist.")
+		return
 	}
 
 	if err := auth.Compare(d.Password, u.Password); err != nil {
 		c.String(http.StatusForbidden, "The username or the password was incorrect.")
-	} else {
-		c.String(200, strconv.Itoa(d.ID))
+		return
 	}
+
+	t, err := token.Sign(c, token.Content{ID: d.ID, Username: d.Username}, "")
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+
+	c.String(200, t)
+	return
 }
