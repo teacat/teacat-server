@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -23,12 +22,9 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	fmt.Println(t.Username)
-
-	var u model.User
-	if err := c.Bind(&u); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
-		return
+	u := model.User{
+		Username: t.Username,
+		Password: t.Password,
 	}
 
 	u.Password, _ = auth.Encrypt(u.Password)
