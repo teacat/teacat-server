@@ -29,4 +29,4 @@ export KITSVC_CONSUL_CHECK_TIMEOUT="1s"
 export KITSVC_CONSUL_TAGS="string,micro"
 ./bin/main
 
-//protoc --go_out=. ./protobuf/*.proto
+//protoc --go_out=. ./pb/*.proto

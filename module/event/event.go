@@ -98,9 +98,9 @@ func Capture(c *cli.Context, e *eventutil.Engine, played chan<- bool, ready <-ch
 
 						// Bye bye if really error.
 					default:
-						// TODO: Reconnect.
-						logrus.Errorln(reader.Err())
-						logrus.Fatalln("Error occurred while reading the incoming event.")
+						logrus.Warningln(reader.Err())
+						logrus.Warningln("Error occurred while reading the incoming event.")
+						continue
 					}
 
 					// We received the event, and we're going to make a http request,

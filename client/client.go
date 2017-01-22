@@ -1,14 +1,18 @@
 package client
 
 import (
+	"fmt"
+
 	"github.com/TeaMeow/KitSvc/model"
-	"github.com/TeaMeow/KitSvc/protobuf"
 )
 
 type Client interface {
-	PostUser(*model.User) protobuf.CreateUserResponse
-	GetUser()
+	PostUser(*model.User) (out *model.User, err []error)
 	PutUser()
 	DeleteUser()
 	PostAuth()
+}
+
+func uri(path string, base string) string {
+	return fmt.Sprintf(path, base)
 }
