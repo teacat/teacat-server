@@ -17,9 +17,6 @@ type Store interface {
 
 	// UpdateUser updates an user account.
 	UpdateUser(*model.User) error
-
-	//
-	Can(*model.Permission) bool
 }
 
 // CreateUser creates a new user account.
@@ -40,8 +37,4 @@ func DeleteUser(c *gin.Context, id int) error {
 // UpdateUser updates an user account.
 func UpdateUser(c *gin.Context, user *model.User) error {
 	return FromContext(c).UpdateUser(user)
-}
-
-func Can(c *gin.Context, p *model.Permission) bool {
-	return FromContext(c).Can(p)
 }

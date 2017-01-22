@@ -9,6 +9,7 @@ import (
 	"github.com/TeaMeow/KitSvc/shared/token"
 	"github.com/TeaMeow/KitSvc/store"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 )
 
 //
@@ -26,12 +27,12 @@ func CreateUser(c *gin.Context) {
 	}
 	// Encrypt the user password.
 	if err := auth.Encrypt(&u.Password); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	// Insert the user to the database.
 	if err := store.CreateUser(c, &u); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	// Show the user information.
@@ -53,57 +54,84 @@ func GetUser(c *gin.Context) {
 
 //
 func DeleteUser(c *gin.Context) {
+	// Get the user id from the url parameter.
+	userID, _ := strconv.Atoi(c.Param("id"))
+	// Delete the user in the database.
+	if err := store.DeleteUser(c, userID); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.String(http.StatusNotFound, "The user doesn't exist.")
+		} else {
+			c.AbortWithError(http.StatusInternalServerError, err)
+		}
+		return
+	}
 
+	c.String(http.StatusOK, "The user has been deleted successfully.")
 }
 
 //
 func UpdateUser(c *gin.Context) {
+	// Get the user id from the url parameter.
 	userID, _ := strconv.Atoi(c.Param("id"))
 
-	t, err := token.ParseRequest(c)
-	if err != nil {
-		c.String(http.StatusForbidden, "The token was incorrect.")
-		return
-	} else {
-		c.JSON(http.StatusOK, t)
-		return
-	}
-
-	return
-
-	if store.Can(c, &model.Permission{
-		Action:     model.PERM_EDIT,
-		ResourceID: userID,
-		UserID:     userID,
-	}) {
-		c.String(http.StatusOK, "Okay: %d", userID)
-		return
-	}
-
-	c.String(http.StatusForbidden, "What the fuck? %d", userID)
-}
-
-//
-func Login(c *gin.Context) {
+	// Binding the user data.
 	var u model.User
 	if err := c.Bind(&u); err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
+	// We update the record based on the user id.
+	u.ID = userID
+
+	// Validate the data.
+	if err := u.Validate(); err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+	// Parse the json web token.
+	if _, err := token.ParseRequest(c); err != nil {
+		c.String(http.StatusForbidden, "The token was incorrect.")
+		return
+	}
+	// Encrypt the user password.
+	if err := auth.Encrypt(&u.Password); err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	// bBBBBVCBCVBCVBCVBCVBCBoardcast
+	// Update the user in the database.
+	if err := store.UpdateUser(c, &u); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.String(http.StatusNotFound, "The user doesn't exist.")
+		} else {
+			c.AbortWithError(http.StatusInternalServerError, err)
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, u)
+}
+
+//
+func Login(c *gin.Context) {
+	// Binding the data with the user struct.
+	var u model.User
+	if err := c.Bind(&u); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
 	// Get the user information by the login username.
 	d, err := store.GetUser(c, u.Username)
 	if err != nil {
 		c.String(http.StatusNotFound, "The user doesn't exist.")
 		return
 	}
-
 	// Compare the login password with the user password.
 	if err := auth.Compare(d.Password, u.Password); err != nil {
 		c.String(http.StatusForbidden, "The password was incorrect.")
 		return
 	}
-
 	// Sign the json web token.
 	t, err := token.Sign(c, token.Content{ID: d.ID, Username: d.Username}, "")
 	if err != nil {
@@ -111,5 +139,5 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	c.String(http.StatusOK, t)
+	c.JSON(http.StatusOK, gin.H{"token": t})
 }
