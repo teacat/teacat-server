@@ -1,33 +1,25 @@
 package router
 
 import (
-	"net/http"
-
 	"github.com/TeaMeow/KitSvc/module/sd"
 	"github.com/TeaMeow/KitSvc/router/middleware/header"
 	"github.com/TeaMeow/KitSvc/server"
 	"github.com/TeaMeow/KitSvc/shared/eventutil"
-	"github.com/codegangsta/cli"
 	"github.com/gin-gonic/gin"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 )
 
-func Load(c *cli.Context, mw ...gin.HandlerFunc) (http.Handler, *eventutil.Engine) {
-
-	// The middlewares.
-	g := gin.New()
-
+func Load(g *gin.Engine, e *eventutil.Engine, mw ...gin.HandlerFunc) *gin.Engine {
+	// Middlewares.
 	g.Use(gin.Logger())
 	g.Use(gin.Recovery())
 	g.Use(header.NoCache)
 	g.Use(header.Options)
 	g.Use(header.Secure)
 	g.Use(mw...)
-
+	// Prometheus middleware.
 	p := ginprometheus.NewPrometheus("gin")
 	p.Use(g)
-
-	//middleware.JWT(c),
 
 	// The common handlers.
 	g.POST("/user", server.CreateUser)
@@ -44,8 +36,7 @@ func Load(c *cli.Context, mw ...gin.HandlerFunc) (http.Handler, *eventutil.Engin
 	g.GET("/sd/ram", sd.RAMCheck)
 
 	// The event handlers.
-	e := eventutil.New(g)
-	e.POST("/es/user.create/", "user.create", server.CreateUser)
+	e.POST("/es/user.create/", "user.create", server.Created)
 
-	return e.Gin, e
+	return g
 }

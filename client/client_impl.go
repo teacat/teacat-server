@@ -1,8 +1,6 @@
 package client
 
 import (
-	"net/http"
-
 	"github.com/TeaMeow/KitSvc/model"
 	"github.com/parnurzeal/gorequest"
 )
@@ -13,13 +11,12 @@ const (
 )
 
 type client struct {
-	client *http.Client
-	token  string
-	base   string
+	token string
+	base  string
 }
 
 func NewClient(uri string) Client {
-	return &client{client: http.DefaultClient, base: uri}
+	return &client{base: uri}
 }
 
 func (c *client) PostUser(in *model.User) (out *model.User, err []error) {

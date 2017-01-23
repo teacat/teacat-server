@@ -6,34 +6,39 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/TeaMeow/KitSvc/module/event"
 	"github.com/TeaMeow/KitSvc/module/sd"
 	"github.com/TeaMeow/KitSvc/router"
 	"github.com/TeaMeow/KitSvc/router/middleware"
+	"github.com/TeaMeow/KitSvc/shared/eventutil"
 	"github.com/codegangsta/cli"
+	"github.com/gin-gonic/gin"
 )
 
 func server(c *cli.Context) error {
-
-	// The gin router and the event handlers.
-	serviceHandler, eventHandler := router.Load(
-		c,
-		middleware.Config(c),
-		middleware.Store(c),
-		middleware.Logging(),
-	)
-
+	// The ready, event played states.
 	isReady := make(chan bool)
 	isPlayed := make(chan bool)
 
-	// Capturing the events when the router was ready in the goroutine.
-	go event.Capture(c, eventHandler, isPlayed, isReady)
+	// Create the Gin engine.
+	gin := gin.New()
+	// Create the event handler struct.
+	event := eventutil.New(gin)
+	// Routes.
+	router.Load(
+		gin,
+		event,
+		middleware.Config(c),
+		middleware.Store(c),
+		middleware.Logging(),
+		middleware.Event(c, event, isPlayed, isReady),
+	)
 
 	// And register the service to the service registry when the events were replayed in the goroutine.
 	go sd.Wait(c, isPlayed)
 
 	// We only do those things when the router is ready to use.
 	go func() {
+
 		// To check the router is good to go,
 		// we ping the server by sending the GET request to the router.
 		if err := pingServer(c); err != nil {
@@ -47,10 +52,7 @@ func server(c *cli.Context) error {
 	}()
 
 	// Start to listening the incoming requests.
-	return http.ListenAndServe(
-		c.String("addr"),
-		serviceHandler,
-	)
+	return http.ListenAndServe(c.String("addr"), gin)
 }
 
 // pingServer pings the http server to make sure the router is currently working.

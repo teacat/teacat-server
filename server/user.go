@@ -1,16 +1,27 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/TeaMeow/KitSvc/model"
+	"github.com/TeaMeow/KitSvc/module/event"
 	"github.com/TeaMeow/KitSvc/shared/auth"
 	"github.com/TeaMeow/KitSvc/shared/token"
 	"github.com/TeaMeow/KitSvc/store"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
+
+func Created(c *gin.Context) {
+	var u model.User
+	if err := c.Bind(&u); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+	fmt.Println(u)
+}
 
 //
 func CreateUser(c *gin.Context) {
@@ -35,6 +46,9 @@ func CreateUser(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+
+	event.UserCreated(c, &u)
+
 	// Show the user information.
 	c.JSON(http.StatusOK, u)
 }

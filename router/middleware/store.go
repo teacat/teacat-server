@@ -7,8 +7,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Store(c *cli.Context) gin.HandlerFunc {
-	v := datastore.Open(
+func Store(cli *cli.Context) gin.HandlerFunc {
+	v := setupStore(cli)
+	return func(c *gin.Context) {
+		store.ToContext(c, v)
+		c.Next()
+	}
+}
+
+func setupStore(c *cli.Context) store.Store {
+	return datastore.Open(
 		c.String("database-user"),
 		c.String("database-password"),
 		c.String("database-host"),
@@ -17,9 +25,4 @@ func Store(c *cli.Context) gin.HandlerFunc {
 		c.Bool("database-parse_time"),
 		c.String("database-loc"),
 	)
-
-	return func(c *gin.Context) {
-		store.ToContext(c, v)
-		c.Next()
-	}
 }

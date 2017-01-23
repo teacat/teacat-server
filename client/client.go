@@ -8,6 +8,7 @@ import (
 
 type Client interface {
 	PostUser(*model.User) (out *model.User, err []error)
+	GetUser()
 	PutUser()
 	DeleteUser()
 	PostAuth()

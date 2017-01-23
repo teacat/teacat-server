@@ -62,7 +62,7 @@ func CPUCheck(c *gin.Context) {
 	text := "OK"
 
 	if l5 >= float64(cores-1) {
-		status = http.StatusOK
+		status = http.StatusInternalServerError
 		text = "CRITICAL"
 	} else if l5 >= float64(cores-2) {
 		status = http.StatusTooManyRequests
@@ -87,7 +87,7 @@ func RAMCheck(c *gin.Context) {
 	text := "OK"
 
 	if usedPercent >= 95 {
-		status = http.StatusOK
+		status = http.StatusInternalServerError
 		text = "CRITICAL"
 	} else if usedPercent >= 90 {
 		status = http.StatusTooManyRequests
