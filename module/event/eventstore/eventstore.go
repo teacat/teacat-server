@@ -1,8 +1,8 @@
 package eventstore
 
 import (
-	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 	"time"
@@ -10,6 +10,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/TeaMeow/KitSvc/shared/eventutil"
 	"github.com/jetbasrawi/go.geteventstore"
+	"github.com/parnurzeal/gorequest"
 )
 
 type eventstore struct {
@@ -18,17 +19,42 @@ type eventstore struct {
 
 // newClient creates a new event store client.
 func NewClient(url string, esUrl string, username string, password string, e *eventutil.Engine, isPlayed chan<- bool, isReady <-chan bool) *eventstore {
+	// Ping the Event Store to make sure it's alive.
+	if err := pingStore(esUrl); err != nil {
+		logrus.Fatalln("Cannot connect to Event Store after retried so many times.")
+	}
+	// Create the client to Event Store.
 	client, err := goes.NewClient(nil, esUrl)
 	if err != nil {
 		logrus.Errorln(err)
-		logrus.Fatalln("Event store connection failed.")
+		logrus.Fatalln("Cannot create the client of Event Store.")
 	}
+
 	// Set the username, password
 	client.SetBasicAuth(username, password)
+
 	// Capturing the events when the router was ready in the goroutine.
 	go capture(url, client, e, isPlayed, isReady)
 
 	return &eventstore{client}
+}
+
+//
+func pingStore(url string) error {
+	for i := 0; i < 30; i++ {
+		// Ping the Event Store by sending a GET request,
+		// and the response status code doesn't matter.
+		_, err := http.Get(url)
+		if err == nil {
+			return nil
+		}
+
+		// Waiting for another round if we didn't receive the response.
+		logrus.Infof("Cannot connect to Event Store, retry in 3 second.")
+		time.Sleep(time.Second * 3)
+	}
+
+	return errors.New("Cannot connect to Event Store.")
 }
 
 //
@@ -52,23 +78,21 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 	// Each of the listener.
 	for _, l := range e.Listeners {
 		// Create the the stream reader for listening the specified stream.
-		reader := client.NewStreamReader(l.Stream)
+		r := client.NewStreamReader(l.Stream)
 
 		go func(l eventutil.Listener) {
-
 			// The `sent` toggle used to make sure if we have sent the `played` indicator or not.
 			sent := false
 
 			// Read the next event.
-			for reader.Next() {
+			for r.Next() {
 
 				// Error occurred.
-				if reader.Err() != nil {
-					switch reader.Err().(type) {
+				if r.Err() != nil {
+					switch r.Err().(type) {
 
 					// Continue if there's no more event.
 					case *goes.ErrNoMoreEvents:
-
 						// Since there're no more messages can read. We've replayed all the events,
 						// and it's time to register the service to the sd because we're ready.
 						if !sent {
@@ -81,7 +105,7 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 						// When there are no more events in the stream, set LongPoll.
 						// The server will wait for 15 seconds in this case or until
 						// events become available on the stream.
-						reader.LongPoll(15)
+						r.LongPoll(15)
 
 					// Create an empty event if the stream hasn't been created.
 					case *goes.ErrNotFound:
@@ -102,7 +126,7 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 
 						// Bye bye if really error.
 					default:
-						logrus.Warningln(reader.Err())
+						logrus.Warningln(r.Err())
 						logrus.Warningln("Error occurred while reading the incoming event.")
 						continue
 					}
@@ -111,18 +135,24 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 					// send it to out own Gin router.
 				} else {
 					// Get the event body.
-					json, _ := reader.EventResponse().Event.Data.(*json.RawMessage).MarshalJSON()
+					json, err := r.EventResponse().Event.Data.(*json.RawMessage).MarshalJSON()
+					if err != nil {
+						logrus.Warningln(err)
+						logrus.Warningf("Cannot parse the event data, the `%s` event has been skipped.", l.Stream)
+						continue
+					}
 
 					// Skip the empty json event,
 					// because that might be the one which we used to create the new stream.
 					if isEmptyEvent(json) {
-						logrus.Infof("Received the empty event from the `%s`.", l.Stream)
+						logrus.Infof("Received the empty `%s` event.", l.Stream)
 						continue
 					}
 
 					// Send the received data to self-router,
 					// so we can process it in the router.
-					sendToRouter(l.Method, localUrl+l.Path, json)
+					go sendToRouter(l.Method, localUrl+l.Path, json)
+					continue
 				}
 			}
 		}(l)
@@ -130,20 +160,17 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 }
 
 // sendToRouter sends the received event data to self router.
-func sendToRouter(method string, path string, json []byte) {
-	// Prepare to send the event data to the gin router.
-	req, _ := http.NewRequest(method, path, bytes.NewBuffer(json))
-	req.Header.Set("Content-Type", "application/json")
-
+func sendToRouter(method string, url string, json []byte) {
 	// Send the request via the HTTP client.
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, _, err := gorequest.
+		New().
+		CustomMethod(method, url).
+		Send(string(json)).
+		End()
 	if err != nil {
 		logrus.Errorln(err)
 		logrus.Fatalln("Error occurred while sending the event to self router.")
 	}
-	defer resp.Body.Close()
-
 	if resp.StatusCode != 200 {
 		logrus.Infoln("The event has been recevied by the router, but the status code wasn't 200.")
 	}

@@ -3,6 +3,7 @@ package eventstore
 import (
 	"fmt"
 	"net"
+	"os"
 	"syscall"
 
 	"github.com/Sirupsen/logrus"
@@ -16,14 +17,8 @@ func (es *eventstore) UserCreated(u *model.User) error {
 	// Create am empty stream.
 	err := writer.Append(nil, goes.NewEvent("", "", u, map[string]string{}))
 	if err != nil {
-		switch t := err.(type) {
-		case *net.OpError:
-			if t.Op == "dial" {
-				fmt.Println("Unknown host")
-			} else if t.Op == "read" {
-				fmt.Println("Connection refused")
-			}
-		case syscall.Errno:
+		switch err.(type) {
+		case *os.SyscallError, syscall.Errno, *net.OpError:
 			fmt.Println("Ee")
 		}
 		logrus.Warningln(err)
