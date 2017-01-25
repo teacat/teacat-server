@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/TeaMeow/KitSvc/module/metrics"
 	"github.com/TeaMeow/KitSvc/module/sd"
 	"github.com/TeaMeow/KitSvc/router"
 	"github.com/TeaMeow/KitSvc/router/middleware"
@@ -24,18 +23,16 @@ func server(c *cli.Context) error {
 	gin := gin.New()
 	// Create the event handler struct.
 	event := eventutil.New(gin)
-	//
-	metrics := metrics.New()
+
 	// Routes.
 	router.Load(
 		gin,
 		event,
-		metrics,
 		middleware.Config(c),
 		middleware.Store(c),
 		middleware.Logging(),
 		middleware.Event(c, event, isPlayed, isReady),
-		//middleware.Metrics(metrics)
+		middleware.Metrics(),
 	)
 
 	// And register the service to the service registry when the events were replayed in the goroutine.

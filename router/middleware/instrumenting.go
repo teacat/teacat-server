@@ -7,10 +7,13 @@ import (
 
 func Metrics() gin.HandlerFunc {
 	v := setupMetrics()
-	return func(c *gin.Context) {
-		metrics.ToContext(c, v)
-		c.Next()
-	}
+
+	return v.Handler()
+	//return func(c *gin.Context) {
+	//	metrics.ToContext(c, v)
+	//    return metrics(v)
+	//	//c.Next()
+	//}
 }
 
 func setupMetrics() *metrics.Metrics {

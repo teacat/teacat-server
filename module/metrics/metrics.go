@@ -1,8 +1,12 @@
 package metrics
 
 import (
+	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -21,110 +25,212 @@ const (
 )
 
 var startTime time.Time
+var path = "/metrics"
 
 type Metrics struct {
+	// CounterVec: Request
 	reqTotal,
+	// CounterVec: Event
 	evntRecvTotal, evntSentTotal, evntErrTotal *prometheus.CounterVec
-	reqDuration, reqSize, respSize, reqTotalSize, respTotalSize prometheus.Summary
+	// Summary: Request & Response
+	reqDuration, reqSize, respSize prometheus.Summary
+	// Gauge: Uptime
 	uptime,
+	// Gauge: CPU
 	cpuCores, cpuUsage, cpuSystemUsage, cpuUserUsage, cpuLoad1, cpuLoad5, cpuLoad15,
+	// Gauge: Memory
 	memUsage, memTotal, memBuffers, memCached, memUsed, memFree,
+	// Gauge: Swap
 	swapUsage, swapTotal, swapUsed, swapFree,
+	// Gauge: Disk
 	diskRead, diskWrite, diskUsage, diskUsed, diskFree, diskTotal,
-	networkIn, networkOut, networkInPkt, networkOutPkt prometheus.Gauge
+	// Gauge: Network
+	networkIn, networkOut, networkInTotal, networkOutTotal, networkInPkt, networkOutPkt prometheus.Gauge
+
+	//
+	lastOutbound uint64
+	lastInbound  uint64
 }
 
-func (m *Metrics) Handler() gin.HandlerFunc {
+func (m *Metrics) InstruNetwork() {
+	for {
+		<-time.After(time.Second * 1)
 
-	h := promhttp.Handler()
-	return func(c *gin.Context) {
-		m.uptime.Set(time.Since(startTime).Seconds())
-
-		cpuCores, err := cpu.Counts(true)
-		if err != nil {
-			panic(err)
-		}
-		m.cpuCores.Set(float64(cpuCores))
-
-		// ....TODO: cpus
-		cpuUsage, err := cpu.Percent(0, false)
-		if err != nil {
-			panic(err)
-		}
-		m.cpuUsage.Set(cpuUsage[0])
-
-		// ....TODO: cpus
-		cpuTimes, err := cpu.Times(false)
-		if err != nil {
-			panic(err)
-		}
-		m.cpuSystemUsage.Set(cpuTimes[0].System)
-		m.cpuUserUsage.Set(cpuTimes[0].User)
-
-		cpuLoad, err := load.Avg()
-		if err != nil {
-			panic(err)
-		}
-		m.cpuLoad1.Set(cpuLoad.Load1)
-		m.cpuLoad5.Set(cpuLoad.Load5)
-		m.cpuLoad15.Set(cpuLoad.Load15)
-
-		memVtul, err := mem.VirtualMemory()
-		if err != nil {
-			panic(err)
-		}
-		m.memUsage.Set(memVtul.UsedPercent)
-		m.memTotal.Set(float64(int(memVtul.Total) / MB))
-		m.memBuffers.Set(float64(int(memVtul.Buffers) / MB))
-		m.memCached.Set(float64(int(memVtul.Cached) / MB))
-		m.memUsed.Set(float64(int(memVtul.Used) / MB))
-		m.memFree.Set(float64(int(memVtul.Free) / MB))
-
-		memSwap, err := mem.SwapMemory()
-		if err != nil {
-			panic(err)
-		}
-		m.swapUsage.Set(memSwap.UsedPercent)
-		m.swapTotal.Set(float64(int(memSwap.Total) / MB))
-		m.swapUsed.Set(float64(int(memSwap.Used) / MB))
-		m.swapFree.Set(float64(int(memSwap.Free) / MB))
-
-		//proc, err := process.NewProcess(int32(os.Getpid()))
-		//if err != nil {
-		//	panic(err)
-		//}
-		//ioCnt, err := proc.IOCounters()
-		//if err != nil {
-		//	panic(err)
-		//}
-		//m.diskRead.Set(float64(ioCnt.ReadBytes))
-		//m.diskWrite.Set(float64(ioCnt.WriteBytes))
-
-		disk, err := disk.Usage("/")
-		if err != nil {
-			panic(err)
-		}
-		m.diskUsage.Set(float64(disk.UsedPercent))
-		m.diskUsed.Set(float64(int(disk.Used) / GB))
-		m.diskFree.Set(float64(int(disk.Free) / GB))
-		m.diskTotal.Set(float64(int(disk.Total) / GB))
-
-		// ....TODO: interfaces
 		n, err := net.IOCounters(false)
 		if err != nil {
 			panic(err)
 		}
-		m.networkIn.Set(float64(n[0].BytesRecv))
-		m.networkOut.Set(float64(n[0].BytesSent))
-		m.networkInPkt.Set(float64(n[0].PacketsRecv))
-		m.networkOutPkt.Set(float64(n[0].PacketsSent))
 
+		m.networkIn.Set(float64(n[0].BytesRecv - m.lastInbound))
+		m.networkOut.Set(float64(n[0].BytesSent - m.lastOutbound))
+
+		m.lastInbound = n[0].BytesRecv
+		m.lastOutbound = n[0].BytesSent
+	}
+}
+
+type information struct {
+	cpuCores int
+	cpuUsage []float64
+	cpuTimes []cpu.TimesStat
+	cpuLoad  *load.AvgStat
+	memVtul  *mem.VirtualMemoryStat
+	memSwap  *mem.SwapMemoryStat
+	disk     *disk.UsageStat
+	network  []net.IOCountersStat
+}
+
+func systemInfo() (information, error) {
+	cpuCores, err := cpu.Counts(true)
+	if err != nil {
+		return information{}, err
+	}
+	cpuUsage, err := cpu.Percent(0, false)
+	if err != nil {
+		return information{}, err
+	}
+	cpuTimes, err := cpu.Times(false)
+	if err != nil {
+		return information{}, err
+	}
+	cpuLoad, err := load.Avg()
+	if err != nil {
+		return information{}, err
+	}
+	memVtul, err := mem.VirtualMemory()
+	if err != nil {
+		return information{}, err
+	}
+	memSwap, err := mem.SwapMemory()
+	if err != nil {
+		return information{}, err
+	}
+	disk, err := disk.Usage("/")
+	if err != nil {
+		return information{}, err
+	}
+	network, err := net.IOCounters(false)
+	if err != nil {
+		return information{}, err
+	}
+	return information{cpuCores, cpuUsage, cpuTimes, cpuLoad, memVtul, memSwap, disk, network}, nil
+}
+
+func (m *Metrics) instrument() error {
+	info, err := systemInfo()
+	if err != nil {
+		return err
+	}
+
+	// Uptime
+	m.uptime.Set(time.Since(startTime).Seconds())
+	// CPU Cores
+	m.cpuCores.Set(float64(info.cpuCores))
+	// CPU Usages
+	m.cpuUsage.Set(info.cpuUsage[0])
+	m.cpuSystemUsage.Set(info.cpuTimes[0].System)
+	m.cpuUserUsage.Set(info.cpuTimes[0].User)
+	// CPU Load
+	m.cpuLoad1.Set(info.cpuLoad.Load1)
+	m.cpuLoad5.Set(info.cpuLoad.Load5)
+	m.cpuLoad15.Set(info.cpuLoad.Load15)
+	// Memory
+	m.memUsage.Set(info.memVtul.UsedPercent)
+	m.memTotal.Set(float64(int(info.memVtul.Total) / MB))
+	m.memBuffers.Set(float64(int(info.memVtul.Buffers) / MB))
+	m.memCached.Set(float64(int(info.memVtul.Cached) / MB))
+	m.memUsed.Set(float64(int(info.memVtul.Used) / MB))
+	m.memFree.Set(float64(int(info.memVtul.Free) / MB))
+	// Swap
+	m.swapUsage.Set(info.memSwap.UsedPercent)
+	m.swapTotal.Set(float64(int(info.memSwap.Total) / MB))
+	m.swapUsed.Set(float64(int(info.memSwap.Used) / MB))
+	m.swapFree.Set(float64(int(info.memSwap.Free) / MB))
+
+	// Data I/O
+	//proc, err := process.NewProcess(int32(os.Getpid()))
+	//if err != nil {
+	//	panic(err)
+	//}
+	//ioCnt, err := proc.IOCounters()
+	//if err != nil {
+	//	panic(err)
+	//}
+	//m.diskRead.Set(float64(info.ioCnt.ReadBytes))
+	//m.diskWrite.Set(float64(info.ioCnt.WriteBytes))
+
+	// Disk
+	m.diskUsage.Set(float64(info.disk.UsedPercent))
+	m.diskUsed.Set(float64(int(info.disk.Used) / MB))
+	m.diskFree.Set(float64(int(info.disk.Free) / MB))
+	m.diskTotal.Set(float64(int(info.disk.Total) / MB))
+	// Network
+	m.networkInTotal.Set(float64(info.network[0].BytesRecv))
+	m.networkOutTotal.Set(float64(info.network[0].BytesSent))
+	m.networkInPkt.Set(float64(info.network[0].PacketsRecv))
+	m.networkOutPkt.Set(float64(info.network[0].PacketsSent))
+
+	return nil
+}
+
+//
+func (m *Metrics) Handler() gin.HandlerFunc {
+	// Keep instrumenting the network traffic.
+	go m.InstruNetwork()
+
+	return func(c *gin.Context) {
+		switch c.Request.URL.String() {
+
+		// Ignore the health check in instrumenting.
+		case "/sd/health", "/sd/ram", "/sd/cpu", "/sd/disk":
+			c.Next()
+
+			// Collect the system information when we received the metrics request.
+		case path:
+			if err := m.instrument(); err != nil {
+				logrus.Errorln(err)
+				logrus.Warningln("Error occurred while instrumenting the system.")
+			}
+			c.Next()
+
+			// Measure the bytes of the request and the response
+			// if it's the normal request.
+		default:
+			// Modifiy the event total if it's an event request.
+			if strings.Contains(c.Request.URL.String(), "/es/") {
+				m.evntRecvTotal.WithLabelValues(c.Request.Method, c.HandlerName()).Inc()
+			}
+			go m.instruRequest(c)
+			c.Next()
+		}
+	}
+}
+
+func (m *Metrics) instruRequest(c *gin.Context) {
+	reqSize := make(chan int)
+	go computeApproximateRequestSize(c.Request, reqSize)
+
+	start := time.Now()
+
+	status := strconv.Itoa(c.Writer.Status())
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	respSize := float64(c.Writer.Size())
+
+	m.reqDuration.Observe(elapsed)
+	m.reqTotal.WithLabelValues(status, c.Request.Method, c.HandlerName()).Inc()
+	m.reqSize.Observe(float64(<-reqSize))
+	m.respSize.Observe(respSize)
+}
+
+func PrometheusHandler() gin.HandlerFunc {
+	h := promhttp.Handler()
+	return func(c *gin.Context) {
 		h.ServeHTTP(c.Writer, c.Request)
 	}
 }
 
 func New() *Metrics {
-	m := &Metrics{}
+	m := &Metrics{lastOutbound: 0, lastInbound: 0}
 	startTime = time.Now()
 
 	// Uptime
@@ -267,6 +373,16 @@ func New() *Metrics {
 		Help: "The speed(MB/s) of the network inbound.",
 	})
 	prometheus.MustRegister(m.networkOut)
+	m.networkInTotal = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "network_inbound_total",
+		Help: "The speed(MB/s) of the network outbound.",
+	})
+	prometheus.MustRegister(m.networkInTotal)
+	m.networkOutTotal = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "network_outbound_total",
+		Help: "The speed(MB/s) of the network inbound.",
+	})
+	prometheus.MustRegister(m.networkOutTotal)
 	m.networkInPkt = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "network_inbound_packets",
 		Help: "x",
@@ -284,7 +400,7 @@ func New() *Metrics {
 			Name: "request_total",
 			Help: "Total number of HTTP requests made.",
 		},
-		[]string{"method", "code"},
+		[]string{"code", "method", "handler"},
 	)
 	prometheus.MustRegister(m.reqTotal)
 	m.reqDuration = prometheus.NewSummary(
@@ -308,20 +424,6 @@ func New() *Metrics {
 		},
 	)
 	prometheus.MustRegister(m.respSize)
-	m.reqTotalSize = prometheus.NewSummary(
-		prometheus.SummaryOpts{
-			Name: "request_size_bytes_total",
-			Help: "x",
-		},
-	)
-	prometheus.MustRegister(m.reqTotalSize)
-	m.respTotalSize = prometheus.NewSummary(
-		prometheus.SummaryOpts{
-			Name: "response_size_bytes_total",
-			Help: "x",
-		},
-	)
-	prometheus.MustRegister(m.respTotalSize)
 
 	// Events
 	m.evntRecvTotal = prometheus.NewCounterVec(
@@ -329,7 +431,7 @@ func New() *Metrics {
 			Name: "event_received_total",
 			Help: "Total number of the receivied events.",
 		},
-		[]string{"method", "event"},
+		[]string{"method", "handler"},
 	)
 	prometheus.MustRegister(m.evntRecvTotal)
 	m.evntSentTotal = prometheus.NewCounterVec(
@@ -349,8 +451,30 @@ func New() *Metrics {
 	)
 	prometheus.MustRegister(m.evntErrTotal)
 
-	// in
-	// out
-	// reset after secs
 	return m
+}
+
+// From https://github.com/DanielHeckrath/gin-prometheus/blob/master/gin_prometheus.go
+func computeApproximateRequestSize(r *http.Request, out chan int) {
+	s := 0
+	if r.URL != nil {
+		s = len(r.URL.String())
+	}
+
+	s += len(r.Method)
+	s += len(r.Proto)
+	for name, values := range r.Header {
+		s += len(name)
+		for _, value := range values {
+			s += len(value)
+		}
+	}
+	s += len(r.Host)
+
+	// N.B. r.Form and r.MultipartForm are assumed to be included in r.URL.
+
+	if r.ContentLength != -1 {
+		s += int(r.ContentLength)
+	}
+	out <- s
 }

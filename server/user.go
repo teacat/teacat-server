@@ -47,7 +47,7 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	event.UserCreated(c, &u)
+	go event.UserCreated(c, &u)
 
 	// Show the user information.
 	c.JSON(http.StatusOK, u)
