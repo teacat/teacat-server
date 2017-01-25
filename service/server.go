@@ -51,7 +51,6 @@ func server(c *cli.Context) error {
 		isReady <- true
 	}()
 
-	isReady <- true
 	// Start to listening the incoming requests.
 	return http.ListenAndServe(c.String("addr"), gin)
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//
 func Load(g *gin.Engine, e *eventutil.Engine, mw ...gin.HandlerFunc) *gin.Engine {
 	// Middlewares.
 	g.Use(gin.LoggerWithWriter(os.Stdout, "/metrics", "/sd/health", "/sd/ram", "/sd/cpu", "/sd/disk"))

@@ -64,16 +64,18 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 
 	// The `All events were played`` state.
 	allPlayed := make(chan bool, len(e.Listeners))
-
+	played <- true
 	// Keep watching if all the events were replayed or not.
-	go func() {
+	/*go func() {
 		for {
+			//fmt.Println("wait")
 			if len(allPlayed) == cap(allPlayed) {
+				fmt.Println("Donezo")
 				played <- true
 				return
 			}
 		}
-	}()
+	}()*/
 
 	// Each of the listener.
 	for _, l := range e.Listeners {
@@ -86,7 +88,6 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 
 			// Read the next event.
 			for r.Next() {
-
 				// Error occurred.
 				if r.Err() != nil {
 					switch r.Err().(type) {
@@ -135,6 +136,7 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 					// send it to out own Gin router.
 				} else {
 					// Get the event body.
+
 					json, err := r.EventResponse().Event.Data.(*json.RawMessage).MarshalJSON()
 					if err != nil {
 						logrus.Warningln(err)
