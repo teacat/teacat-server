@@ -63,19 +63,8 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 	<-ready
 
 	// The `All events were played`` state.
-	allPlayed := make(chan bool, len(e.Listeners))
-	played <- true
-	// Keep watching if all the events were replayed or not.
-	/*go func() {
-		for {
-			//fmt.Println("wait")
-			if len(allPlayed) == cap(allPlayed) {
-				fmt.Println("Donezo")
-				played <- true
-				return
-			}
-		}
-	}()*/
+	playedCount := 0
+	totalCount := len(e.Listeners)
 
 	// Each of the listener.
 	for _, l := range e.Listeners {
@@ -85,6 +74,10 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 		go func(l eventutil.Listener) {
 			// The `sent` toggle used to make sure if we have sent the `played` indicator or not.
 			sent := false
+			//
+			startTime := time.Now()
+			//
+			totalEvents := 0
 
 			// Read the next event.
 			for r.Next() {
@@ -98,9 +91,15 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 						// and it's time to register the service to the sd because we're ready.
 						if !sent {
 							// Send the logger to the played channel because we need the logger.
-							allPlayed <- true
+							playedCount++
 							// Set the sent toggle as true so we won't send the logger to the channel again.
 							sent = true
+
+							logrus.Infof("The `%s` events were all replayed in %.2f seconds, there're total %d events in the stream.", l.Stream, time.Since(startTime).Seconds(), totalEvents)
+
+							if playedCount >= totalCount {
+								played <- true
+							}
 						}
 
 						// When there are no more events in the stream, set LongPoll.
@@ -136,7 +135,6 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 					// send it to out own Gin router.
 				} else {
 					// Get the event body.
-
 					json, err := r.EventResponse().Event.Data.(*json.RawMessage).MarshalJSON()
 					if err != nil {
 						logrus.Warningln(err)
@@ -147,9 +145,11 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 					// Skip the empty json event,
 					// because that might be the one which we used to create the new stream.
 					if isEmptyEvent(json) {
-						logrus.Infof("Received the empty `%s` event.", l.Stream)
+						//logrus.Infof("Received the empty `%s` event.", l.Stream)
 						continue
 					}
+
+					totalEvents++
 
 					// Send the received data to self-router,
 					// so we can process it in the router.

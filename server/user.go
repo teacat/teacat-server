@@ -113,7 +113,6 @@ func UpdateUser(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	// bBBBBVCBCVBCVBCVBCVBCBoardcast
 	// Update the user in the database.
 	if err := store.UpdateUser(c, &u); err != nil {
 		if err == gorm.ErrRecordNotFound {
