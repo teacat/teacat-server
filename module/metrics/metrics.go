@@ -52,23 +52,6 @@ type Metrics struct {
 	lastInbound  uint64
 }
 
-func (m *Metrics) InstruNetwork() {
-	for {
-		<-time.After(time.Second * 1)
-
-		n, err := net.IOCounters(false)
-		if err != nil {
-			panic(err)
-		}
-
-		m.networkIn.Set(float64(n[0].BytesRecv - m.lastInbound))
-		m.networkOut.Set(float64(n[0].BytesSent - m.lastOutbound))
-
-		m.lastInbound = n[0].BytesRecv
-		m.lastOutbound = n[0].BytesSent
-	}
-}
-
 type information struct {
 	cpuCores int
 	cpuUsage []float64
@@ -146,7 +129,6 @@ func (m *Metrics) instrument() error {
 	m.swapTotal.Set(float64(int(info.memSwap.Total) / MB))
 	m.swapUsed.Set(float64(int(info.memSwap.Used) / MB))
 	m.swapFree.Set(float64(int(info.memSwap.Free) / MB))
-
 	// Data I/O
 	//proc, err := process.NewProcess(int32(os.Getpid()))
 	//if err != nil {
@@ -158,7 +140,6 @@ func (m *Metrics) instrument() error {
 	//}
 	//m.diskRead.Set(float64(info.ioCnt.ReadBytes))
 	//m.diskWrite.Set(float64(info.ioCnt.WriteBytes))
-
 	// Disk
 	m.diskUsage.Set(float64(info.disk.UsedPercent))
 	m.diskUsed.Set(float64(int(info.disk.Used) / MB))
@@ -173,10 +154,43 @@ func (m *Metrics) instrument() error {
 	return nil
 }
 
+func (m *Metrics) instruNetwork() {
+	for {
+		<-time.After(time.Second * 1)
+
+		n, err := net.IOCounters(false)
+		if err != nil {
+			panic(err)
+		}
+
+		m.networkIn.Set(float64(n[0].BytesRecv - m.lastInbound))
+		m.networkOut.Set(float64(n[0].BytesSent - m.lastOutbound))
+
+		m.lastInbound = n[0].BytesRecv
+		m.lastOutbound = n[0].BytesSent
+	}
+}
+
+func (m *Metrics) instruRequest(c *gin.Context) {
+	reqSize := make(chan int)
+	go computeReqSize(c.Request, reqSize)
+
+	start := time.Now()
+
+	status := strconv.Itoa(c.Writer.Status())
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	respSize := float64(c.Writer.Size())
+
+	m.reqDuration.Observe(elapsed)
+	m.reqTotal.WithLabelValues(status, c.Request.Method, c.HandlerName()).Inc()
+	m.reqSize.Observe(float64(<-reqSize))
+	m.respSize.Observe(respSize)
+}
+
 //
 func (m *Metrics) Handler() gin.HandlerFunc {
 	// Keep instrumenting the network traffic.
-	go m.InstruNetwork()
+	go m.instruNetwork()
 
 	return func(c *gin.Context) {
 		switch c.Request.URL.String() {
@@ -204,22 +218,6 @@ func (m *Metrics) Handler() gin.HandlerFunc {
 			c.Next()
 		}
 	}
-}
-
-func (m *Metrics) instruRequest(c *gin.Context) {
-	reqSize := make(chan int)
-	go computeApproximateRequestSize(c.Request, reqSize)
-
-	start := time.Now()
-
-	status := strconv.Itoa(c.Writer.Status())
-	elapsed := float64(time.Since(start)) / float64(time.Second)
-	respSize := float64(c.Writer.Size())
-
-	m.reqDuration.Observe(elapsed)
-	m.reqTotal.WithLabelValues(status, c.Request.Method, c.HandlerName()).Inc()
-	m.reqSize.Observe(float64(<-reqSize))
-	m.respSize.Observe(respSize)
 }
 
 func PrometheusHandler() gin.HandlerFunc {
@@ -455,7 +453,7 @@ func New() *Metrics {
 }
 
 // From https://github.com/DanielHeckrath/gin-prometheus/blob/master/gin_prometheus.go
-func computeApproximateRequestSize(r *http.Request, out chan int) {
+func computeReqSize(r *http.Request, out chan int) {
 	s := 0
 	if r.URL != nil {
 		s = len(r.URL.String())

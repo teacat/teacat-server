@@ -9,11 +9,6 @@ func Metrics() gin.HandlerFunc {
 	v := setupMetrics()
 
 	return v.Handler()
-	//return func(c *gin.Context) {
-	//	metrics.ToContext(c, v)
-	//    return metrics(v)
-	//	//c.Next()
-	//}
 }
 
 func setupMetrics() *metrics.Metrics {

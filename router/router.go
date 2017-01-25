@@ -36,7 +36,7 @@ func Load(g *gin.Engine, e *eventutil.Engine, mw ...gin.HandlerFunc) *gin.Engine
 	g.GET("/metrics", metrics.PrometheusHandler())
 
 	// The event handlers.
-	e.POST("/es/user.create/", "user.create", server.Created)
+	e.POST("/es/user.created/", "user.created", server.Created)
 
 	return g
 }
