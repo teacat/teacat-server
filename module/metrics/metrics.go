@@ -234,161 +234,161 @@ func New() *Metrics {
 	// Uptime
 	m.uptime = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "up_time_seconds",
-		Help: "The uptime(seconds) of the server.",
+		Help: "Server uptime.",
 	})
 	prometheus.MustRegister(m.uptime)
 
 	// CPU
 	m.cpuCores = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "cpu_cores",
-		Help: "x",
+		Help: "Number of processor cores.",
 	})
 	prometheus.MustRegister(m.cpuCores)
 	m.cpuUsage = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "cpu_usage",
-		Help: "x",
+		Help: "Percentage of processor usage.",
 	})
 	prometheus.MustRegister(m.cpuUsage)
 	m.cpuSystemUsage = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "cpu_system_usage",
-		Help: "The percentage of the system cpu usage.",
+		Help: "x",
 	})
 	prometheus.MustRegister(m.cpuSystemUsage)
 	m.cpuUserUsage = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "cpu_user_usage",
-		Help: "The percentage of the user cpu usage.",
+		Help: "x",
 	})
 	prometheus.MustRegister(m.cpuUserUsage)
 	m.cpuLoad1 = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "cpu_load_1",
-		Help: "x",
+		Help: "Processor load average in one minute.",
 	})
 	prometheus.MustRegister(m.cpuLoad1)
 	m.cpuLoad5 = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "cpu_load_5",
-		Help: "x",
+		Help: "Processor load average in five minutes.",
 	})
 	prometheus.MustRegister(m.cpuLoad5)
 	m.cpuLoad15 = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "cpu_load_15",
-		Help: "x",
+		Help: "Processor load average in fifthteen minutes.",
 	})
 	prometheus.MustRegister(m.cpuLoad15)
 
 	// Memory
 	m.memUsage = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "memory_usage",
-		Help: "The percentage of the memory usage.",
+		Help: "Percentage of memory usage.",
 	})
 	prometheus.MustRegister(m.memUsage)
 	m.memTotal = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "memory_total",
-		Help: "MB",
+		Help: "The size of the total memory (MB).",
 	})
 	prometheus.MustRegister(m.memTotal)
 	m.memBuffers = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "memory_buffers",
-		Help: "MB",
+		Help: "The size of the buffered memory (MB).",
 	})
 	prometheus.MustRegister(m.memBuffers)
 	m.memCached = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "memory_cached",
-		Help: "MB",
+		Help: "The size of the cached memory (MB).",
 	})
 	prometheus.MustRegister(m.memCached)
 	m.memUsed = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "memory_used",
-		Help: "MB",
+		Help: "The size of the used memory (MB).",
 	})
 	prometheus.MustRegister(m.memUsed)
 	m.memFree = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "memory_free",
-		Help: "MB",
+		Help: "The size of the free memory (MB).",
 	})
 	prometheus.MustRegister(m.memFree)
 	//
 	m.swapUsage = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "swap_memory_usage",
-		Help: "The percentage of the memory usage.",
+		Help: "Percentage of swap memory usage.",
 	})
 	prometheus.MustRegister(m.swapUsage)
 	m.swapTotal = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "swap_memory_total",
-		Help: "MB",
+		Help: "The size of the total swap memory (MB).",
 	})
 	prometheus.MustRegister(m.swapTotal)
 	m.swapUsed = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "swap_memory_used",
-		Help: "MB",
+		Help: "The size of the used swap memory (MB).",
 	})
 	prometheus.MustRegister(m.swapUsed)
 	m.swapFree = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "swap_memory_free",
-		Help: "MB",
+		Help: "The size of the free swap memory (MB).",
 	})
 	prometheus.MustRegister(m.swapFree)
 
 	// Disk
 	m.diskRead = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "disk_read_speed",
-		Help: "The speed(MB/s) of the disk read operation.",
+		Help: "Disk read speed (Byte/s).",
 	})
 	prometheus.MustRegister(m.diskRead)
 	m.diskWrite = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "disk_write_speed",
-		Help: "The speed(MB/s) of the disk write operation.",
+		Help: "Disk write speed (Byte/s).",
 	})
 	prometheus.MustRegister(m.diskWrite)
 	m.diskUsage = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "disk_usage",
-		Help: "The percentage of the disk usage.",
+		Help: "Percentage of disk usage.",
 	})
 	prometheus.MustRegister(m.diskUsage)
 	m.diskUsed = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "disk_used",
-		Help: "GB",
+		Help: "The size of the used disk (MB).",
 	})
 	prometheus.MustRegister(m.diskUsed)
 	m.diskFree = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "disk_free",
-		Help: "GB",
+		Help: "The size of the free disk (MB).",
 	})
 	prometheus.MustRegister(m.diskFree)
 	m.diskTotal = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "disk_total",
-		Help: "GB",
+		Help: "The size of the total disk (MB).",
 	})
 	prometheus.MustRegister(m.diskTotal)
 
 	// Network
 	m.networkIn = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "network_inbound",
-		Help: "The speed(MB/s) of the network outbound.",
+		Help: "Network inbound speed (Byte/s).",
 	})
 	prometheus.MustRegister(m.networkIn)
 	m.networkOut = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "network_outbound",
-		Help: "The speed(MB/s) of the network inbound.",
+		Help: "Network outbound speed (Byte/s).",
 	})
 	prometheus.MustRegister(m.networkOut)
 	m.networkInTotal = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "network_inbound_total",
-		Help: "The speed(MB/s) of the network outbound.",
+		Help: "The size of the total inbound bytes.",
 	})
 	prometheus.MustRegister(m.networkInTotal)
 	m.networkOutTotal = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "network_outbound_total",
-		Help: "The speed(MB/s) of the network inbound.",
+		Help: "The size of the total outbound bytes.",
 	})
 	prometheus.MustRegister(m.networkOutTotal)
 	m.networkInPkt = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "network_inbound_packets",
-		Help: "x",
+		Help: "The count of the total inbound packets.",
 	})
 	prometheus.MustRegister(m.networkInPkt)
 	m.networkOutPkt = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "network_outbound_packets",
-		Help: "x",
+		Help: "The count of the total outbound packets.",
 	})
 	prometheus.MustRegister(m.networkOutPkt)
 
@@ -443,7 +443,7 @@ func New() *Metrics {
 	m.evntErrTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "event_error_total",
-			Help: "Total time of the error occurred while sending the events.",
+			Help: "Total count of the error occurred while sending the events.",
 		},
 		[]string{"event"},
 	)
@@ -470,7 +470,6 @@ func computeReqSize(r *http.Request, out chan int) {
 	s += len(r.Host)
 
 	// N.B. r.Form and r.MultipartForm are assumed to be included in r.URL.
-
 	if r.ContentLength != -1 {
 		s += int(r.ContentLength)
 	}
