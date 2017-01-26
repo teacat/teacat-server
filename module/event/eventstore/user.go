@@ -2,27 +2,53 @@ package eventstore
 
 import (
 	"fmt"
-	"net"
-	"os"
-	"syscall"
+	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/TeaMeow/KitSvc/model"
 	"github.com/jetbasrawi/go.geteventstore"
 )
 
-func (es *eventstore) UserCreated(u *model.User) error {
-	writer := es.NewStreamWriter("user.created")
+func (es *eventstore) Send(stream string, data interface{}, meta interface{}) error {
+	//
+	writer := es.NewStreamWriter(stream)
 
-	// Create am empty stream.
-	err := writer.Append(nil, goes.NewEvent("", "", u, map[string]string{}))
-	if err != nil {
-		switch err.(type) {
-		case *os.SyscallError, syscall.Errno, *net.OpError:
-			fmt.Println("Ee")
+	//
+	//maxRetry := 5
+	//retried := 0
+
+	for {
+		if es.isConnected {
+			err := writer.Append(nil, goes.NewEvent("", "", data, meta))
+			return err
 		}
-		logrus.Warningln(err)
-		logrus.Warningln("Error occurred while creating an empty stream.")
+
+		fmt.Println("Waiting for connection.")
+		<-time.After(time.Second * 1a)
+
+		/*err := writer.Append(nil, goes.NewEvent("", "", data, meta))
+		if err == nil {
+			return nil
+		}
+
+		//
+		if retried < maxRetry {
+			logrus.Warningln(err)
+			logrus.Warningf("Error occurred while creating the `%s` event, retry after 1 second. (%d/%d)", stream, retried, maxRetry)
+
+			retried++
+
+			<-time.After(time.Second * time.Duration(retried))
+
+			//
+		} else {
+			logrus.Errorf("Cannot create the `%s` event after retried %d times.", stream, retried)
+			return err
+		}*/
 	}
+}
+
+func (es *eventstore) UserCreated(u *model.User) error {
+	err := es.Send("user.created", u, map[string]string{})
+
 	return err
 }

@@ -15,16 +15,18 @@ import (
 
 type eventstore struct {
 	*goes.Client
+	isConnected bool
 }
 
 // newClient creates a new event store client.
-func NewClient(url string, esUrl string, username string, password string, e *eventutil.Engine, isPlayed chan<- bool, isReady <-chan bool) *eventstore {
+func NewClient(url string, esURL string, username string, password string, e *eventutil.Engine, played chan<- bool, ready <-chan bool) *eventstore {
 	// Ping the Event Store to make sure it's alive.
-	if err := pingStore(esUrl); err != nil {
+	if err := pingStore(esURL); err != nil {
 		logrus.Fatalln("Cannot connect to Event Store after retried so many times.")
 	}
+
 	// Create the client to Event Store.
-	client, err := goes.NewClient(nil, esUrl)
+	client, err := goes.NewClient(nil, esURL)
 	if err != nil {
 		logrus.Errorln(err)
 		logrus.Fatalln("Cannot create the client of Event Store.")
@@ -33,10 +35,13 @@ func NewClient(url string, esUrl string, username string, password string, e *ev
 	// Set the username, password
 	client.SetBasicAuth(username, password)
 
-	// Capturing the events when the router was ready in the goroutine.
-	go capture(url, client, e, isPlayed, isReady)
+	//
+	es := &eventstore{client, true}
 
-	return &eventstore{client}
+	// Capturing the events when the router was ready in the goroutine.
+	go es.capture(url, e, played, ready)
+
+	return es
 }
 
 //
@@ -58,7 +63,7 @@ func pingStore(url string) error {
 }
 
 //
-func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played chan<- bool, ready <-chan bool) {
+func (es *eventstore) capture(localUrl string, e *eventutil.Engine, played chan<- bool, ready <-chan bool) {
 	// Continue if the router was ready.
 	<-ready
 
@@ -69,7 +74,7 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 	// Each of the listener.
 	for _, l := range e.Listeners {
 		// Create the the stream reader for listening the specified stream.
-		r := client.NewStreamReader(l.Stream)
+		r := es.NewStreamReader(l.Stream)
 
 		go func(l eventutil.Listener) {
 			// The `sent` toggle used to make sure if we have sent the `played` indicator or not.
@@ -81,12 +86,17 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 
 			// Read the next event.
 			for r.Next() {
+
 				// Error occurred.
 				if r.Err() != nil {
 					switch r.Err().(type) {
 
 					// Continue if there's no more event.
 					case *goes.ErrNoMoreEvents:
+
+						//
+						es.isConnected = true
+
 						// Since there're no more messages can read. We've replayed all the events,
 						// and it's time to register the service to the sd because we're ready.
 						if !sent {
@@ -95,7 +105,11 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 							// Set the sent toggle as true so we won't send the logger to the channel again.
 							sent = true
 
-							logrus.Infof("The `%s` events were all replayed in %.2f seconds, there're total %d events in the stream.", l.Stream, time.Since(startTime).Seconds(), totalEvents)
+							logrus.Infof("The `%s` events were all replayed in %.2f seconds, there's a total of %d events were in the stream.",
+								l.Stream,
+								time.Since(startTime).Seconds(),
+								totalEvents,
+							)
 
 							if playedCount >= totalCount {
 								played <- true
@@ -109,7 +123,11 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 
 					// Create an empty event if the stream hasn't been created.
 					case *goes.ErrNotFound:
-						writer := client.NewStreamWriter(l.Stream)
+
+						//
+						es.isConnected = true
+
+						writer := es.NewStreamWriter(l.Stream)
 
 						// Create am empty stream.
 						err := writer.Append(nil, goes.NewEvent("", "", map[string]string{}, map[string]string{}))
@@ -121,11 +139,17 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 
 						// Sleep for 5 seconds and try again if the EventStore was not connected.
 					case *url.Error, *goes.ErrTemporarilyUnavailable:
+						//
+						es.isConnected = false
+
 						logrus.Warningln("Cannot connect to the event store, try again after 3 seconds.")
 						<-time.After(time.Duration(3) * time.Second)
 
 						// Bye bye if really error.
 					default:
+						//
+						es.isConnected = true
+
 						logrus.Warningln(r.Err())
 						logrus.Warningln("Error occurred while reading the incoming event.")
 						continue
@@ -134,6 +158,9 @@ func capture(localUrl string, client *goes.Client, e *eventutil.Engine, played c
 					// We received the event, and we're going to make a http request,
 					// send it to out own Gin router.
 				} else {
+					//
+					es.isConnected = true
+
 					// Get the event body.
 					json, err := r.EventResponse().Event.Data.(*json.RawMessage).MarshalJSON()
 					if err != nil {
