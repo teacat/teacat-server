@@ -54,6 +54,9 @@ func register(c *cli.Context, client *api.Client) {
 		logrus.Fatalln("Error occurred while registering to the service registry (Is consul running?).")
 	}
 
+	//
+	logrus.Infof("The service id is `%s`.", id)
+
 	// Register the health checks.
 	registerChecks(c, client, id)
 

@@ -25,6 +25,9 @@ func Created(c *gin.Context) {
 
 //
 func CreateUser(c *gin.Context) {
+	//time.Sleep(3 * time.Second)
+	//c.AbortWithError(http.StatusInternalServerError, errors.New("Wow"))
+	//return
 	// Binding the data with the user struct.
 	var u model.User
 	if err := c.Bind(&u); err != nil {

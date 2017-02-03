@@ -2,10 +2,10 @@ rm ./bin/main
 cd service
 go build -o ../bin/main
 cd ../
-export KITSVC_NAME="StringService"
-export KITSVC_URL="http://127.0.0.1:8080"
-export KITSVC_ADDR="127.0.0.1:8080"
-export KITSVC_PORT=8080
+export KITSVC_NAME="User"
+export KITSVC_URL="http://127.0.0.1:8888"
+export KITSVC_ADDR="127.0.0.1:8888"
+export KITSVC_PORT=8888
 export KITSVC_USAGE="Operations about the string."
 export KITSVC_JWT_SECRET="4Rtg8BPKwixXy2ktDPxoMMAhRzmo9mmuZjvKONGPZZQSaJWNLijxR42qRgq0iBb5"
 export KITSVC_VERSION="0.0.1"

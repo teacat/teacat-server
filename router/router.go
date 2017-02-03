@@ -1,7 +1,9 @@
 package router
 
 import (
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/TeaMeow/KitSvc/module/metrics"
 	"github.com/TeaMeow/KitSvc/module/sd"
@@ -9,6 +11,7 @@ import (
 	"github.com/TeaMeow/KitSvc/server"
 	"github.com/TeaMeow/KitSvc/shared/eventutil"
 	"github.com/gin-gonic/gin"
+	"github.com/olahol/melody"
 )
 
 //
@@ -35,6 +38,20 @@ func Load(g *gin.Engine, e *eventutil.Engine, mw ...gin.HandlerFunc) *gin.Engine
 	g.GET("/sd/cpu", sd.CPUCheck)
 	g.GET("/sd/ram", sd.RAMCheck)
 	g.GET("/metrics", metrics.PrometheusHandler())
+
+	m := melody.New()
+	m.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
+	g.GET("/websocket", func(c *gin.Context) {
+		m.HandleRequest(c.Writer, c.Request)
+	})
+
+	go func() {
+		for {
+			time.Sleep(1 * time.Second)
+			m.Broadcast([]byte("Wow"))
+		}
+
+	}()
 
 	// The event handlers.
 	e.POST("/es/user.created/", "user.created", server.Created)
