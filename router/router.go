@@ -14,6 +14,15 @@ import (
 	"github.com/olahol/melody"
 )
 
+type route struct {
+	http      string
+	websocket string
+	topic     string
+	channel   string
+	event     string
+	handler   gin.HandlerFunc
+}
+
 //
 func Load(g *gin.Engine, e *eventutil.Engine, mw ...gin.HandlerFunc) *gin.Engine {
 	// Middlewares.
@@ -23,6 +32,100 @@ func Load(g *gin.Engine, e *eventutil.Engine, mw ...gin.HandlerFunc) *gin.Engine
 	g.Use(header.Options)
 	g.Use(header.Secure)
 	g.Use(mw...)
+
+	routes := []route{
+		{
+			http:    "POST /user",
+			handler: server.CreateUser,
+		},
+		{
+			http:    "GET /user/:username",
+			handler: server.GetUser,
+		},
+		{
+			http:    "DELETE /user/:id",
+			handler: server.DeleteUser,
+		},
+		{
+			http:    "PUT /user/:id",
+			handler: server.UpdateUser,
+		},
+		{
+			http:    "POST /auth",
+			handler: server.Login,
+		},
+
+		//
+		{
+			topic:   "send_mail",
+			channel: "user",
+			handler: server.SendMail,
+		},
+
+		//
+		{
+			event:   "user.created",
+			handler: server.Created,
+		},
+
+		//
+		{
+			websocket: "/ws",
+			handler:   server.WebSocket,
+		},
+	}
+
+	/*
+
+		{
+			http: "POST /user",
+			handler: server.CreateUser,
+		},
+
+
+		{
+			method: "POST",
+			pattern: "/user",
+			handler: server.CreateUser,
+		},
+		{
+			method: "GET",
+			pattern: "/user/:username",
+			handler: server.GetUser
+		},
+		{
+			method: "DELETE",
+			pattern: "/user/:id",
+			handler: server.DeleteUser
+		},
+		{
+			method: "PUT",
+			pattern: "/user/:id",
+			handler: server.UpdateUser
+		},
+		{
+			method: "POST",
+			pattern: "/auth"
+			handler: server.Login
+		}*/
+
+	/*
+		{
+			topic: "send_mail",
+			channel: "user",
+			handler: server.SendMail,
+		}*/
+	/*
+		{
+			//route: "/es/user.created/",
+			event: "user.created",
+			handler: server.Created,
+		}*/
+	/*
+		{
+			websocket: "/ws",
+			handler: server.WebSocket,
+		}*/
 
 	// The common handlers.
 	g.POST("/user", server.CreateUser)

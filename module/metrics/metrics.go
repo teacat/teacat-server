@@ -30,12 +30,18 @@ var path = "/metrics"
 type Metrics struct {
 	// CounterVec: Request
 	reqTotal,
+	// CounterVec: Message
+	msgRecvTotal, msgSentTotal, msgErrTotal,
 	// CounterVec: Event
 	evntRecvTotal, evntSentTotal, evntErrTotal *prometheus.CounterVec
 	// Summary: Request & Response
 	reqDuration, reqSize, respSize prometheus.Summary
 	// Gauge: Uptime
 	uptime,
+	// Gauge: Event
+	evntUnsent, evntRecv, evntSent,
+	// Gauge: Message
+	msgUnsent, msgRecv, msgSent,
 	// Gauge: CPU
 	cpuCores, cpuUsage, cpuSystemUsage, cpuUserUsage, cpuLoad1, cpuLoad5, cpuLoad15,
 	// Gauge: Memory

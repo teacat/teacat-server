@@ -7,6 +7,7 @@ import (
 
 	"github.com/TeaMeow/KitSvc/model"
 	"github.com/TeaMeow/KitSvc/module/event"
+	"github.com/TeaMeow/KitSvc/module/mq"
 	"github.com/TeaMeow/KitSvc/shared/auth"
 	"github.com/TeaMeow/KitSvc/shared/token"
 	"github.com/TeaMeow/KitSvc/store"
@@ -29,6 +30,7 @@ func CreateUser(c *gin.Context) {
 	//c.AbortWithError(http.StatusInternalServerError, errors.New("Wow"))
 	//return
 	// Binding the data with the user struct.
+	//
 	var u model.User
 	if err := c.Bind(&u); err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
@@ -48,6 +50,10 @@ func CreateUser(c *gin.Context) {
 	if err := store.CreateUser(c, &u); err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
+	}
+	//
+	if err := mq.SendMail(c, &u); err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
 	}
 
 	go event.UserCreated(c, &u)

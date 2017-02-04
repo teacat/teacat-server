@@ -97,6 +97,28 @@ func main() {
 			Usage:  "parse the time.",
 		},
 
+		// NSQ flags.
+		cli.StringFlag{
+			EnvVar: "KITSVC_NSQ_PRODUCER",
+			Name:   "nsq-producer",
+			Usage:  "the address of the TCP NSQ producer (with the port).",
+			Value:  "127.0.0.1:4150",
+		},
+		cli.StringFlag{
+			EnvVar: "KITSVC_NSQ_PRODUCER_HTTP",
+			Name:   "nsq-producer-http",
+			Usage:  "the address of the HTTP NSQ producer (with the port).",
+			Value:  "127.0.0.1:4151",
+		},
+		cli.StringSliceFlag{
+			EnvVar: "KITSVC_NSQ_LOOKUPDS",
+			Name:   "nsq-lookupds",
+			Usage:  "the address of the NSQ lookupds (with the port).",
+			Value: &cli.StringSlice{
+				"127.0.0.1:4161",
+			},
+		},
+
 		// Event store flags.
 		cli.StringFlag{
 			EnvVar: "KITSVC_ES_SERVER_URL",

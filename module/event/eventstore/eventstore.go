@@ -29,7 +29,7 @@ type event struct {
 func NewClient(url string, esURL string, username string, password string, e *eventutil.Engine, played chan<- bool, ready <-chan bool) *eventstore {
 	// Ping the Event Store to make sure it's alive.
 	if err := pingStore(esURL); err != nil {
-		logrus.Fatalln("Cannot connect to Event Store.")
+		logrus.Fatalln(err)
 	}
 	// Create the client to Event Store.
 	client, err := goes.NewClient(nil, esURL)

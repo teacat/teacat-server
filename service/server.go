@@ -32,6 +32,7 @@ func server(c *cli.Context) error {
 		middleware.Store(c),
 		middleware.Logging(),
 		middleware.Event(c, event, isPlayed, isReady),
+		middleware.MQ(c),
 		middleware.Metrics(),
 	)
 
