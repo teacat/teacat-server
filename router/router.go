@@ -3,6 +3,7 @@ package router
 import (
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/TeaMeow/KitSvc/module/metrics"
@@ -23,6 +24,41 @@ type route struct {
 	handler   gin.HandlerFunc
 }
 
+func parseHTTP(s string) (method string, path string) {
+	str := strings.Split(s, " ")
+	method, path = str[0], str[1]
+
+	return
+}
+
+func Parse(g *gin.Engine, e *eventutil.Engine, routes []route) {
+	for _, r := range routes {
+		// REST
+		if r.http != "" {
+			method, path := parseHTTP(r.http)
+			g.Handle(method, path, r.handler)
+
+			// Message
+		} else if r.topic != "" {
+
+			// Event
+		} else if r.event != "" {
+			e.POST("/es/"+r.event, r.event, r.handler)
+
+			// WebSocket
+		} else if r.websocket != "" {
+			m := melody.New()
+			m.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
+			g.GET(r.websocket, func(c *gin.Context) {
+				c.Set("websocket", m)
+				r.handler(c)
+			})
+			//m.HandleRequest(c.Writer, c.Request)
+			//m.Broadcast([]byte("Wow"))
+		}
+	}
+}
+
 //
 func Load(g *gin.Engine, e *eventutil.Engine, mw ...gin.HandlerFunc) *gin.Engine {
 	// Middlewares.
@@ -34,6 +70,7 @@ func Load(g *gin.Engine, e *eventutil.Engine, mw ...gin.HandlerFunc) *gin.Engine
 	g.Use(mw...)
 
 	routes := []route{
+		//
 		{
 			http:    "POST /user",
 			handler: server.CreateUser,

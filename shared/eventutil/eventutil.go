@@ -18,6 +18,21 @@ func New(e *gin.Engine) *Engine {
 	return &Engine{Gin: e}
 }
 
+func (e *Engine) Handle(method, relativePath string, stream string, handler func(*gin.Context)) {
+	switch method {
+	case "POST":
+		e.POST(relativePath, stream, handler)
+	case "PUT":
+		e.PUT(relativePath, stream, handler)
+	case "GET":
+		e.GET(relativePath, stream, handler)
+	case "DELETE":
+		e.DELETE(relativePath, stream, handler)
+	case "PATCH":
+		e.PATCH(relativePath, stream, handler)
+	}
+}
+
 func (e *Engine) POST(relativePath string, stream string, handler func(*gin.Context)) {
 	e.Gin.POST(relativePath, handler)
 	e.Listeners = append(e.Listeners, Listener{"POST", relativePath, stream, handler})

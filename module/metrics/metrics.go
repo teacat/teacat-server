@@ -36,6 +36,7 @@ type Metrics struct {
 	evntRecvTotal, evntSentTotal, evntErrTotal *prometheus.CounterVec
 	// Summary: Request & Response
 	reqDuration, reqSize, respSize prometheus.Summary
+	// circurit breaker
 	// Gauge: Uptime
 	uptime,
 	// Gauge: Event
