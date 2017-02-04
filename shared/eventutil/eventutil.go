@@ -11,7 +11,7 @@ type Listener struct {
 	Method  string
 	Path    string
 	Stream  string
-	Handler func(*gin.Context)
+	Handler gin.HandlerFunc
 }
 
 func New(e *gin.Engine) *Engine {
@@ -33,27 +33,32 @@ func (e *Engine) Handle(method, relativePath string, stream string, handler func
 	}
 }
 
-func (e *Engine) POST(relativePath string, stream string, handler func(*gin.Context)) {
+func (e *Engine) Capture(stream string, handler gin.HandlerFunc) {
+	e.Gin.POST("/es/"+stream, handler)
+	e.Listeners = append(e.Listeners, Listener{"POST", "/es/" + stream, stream, handler})
+}
+
+func (e *Engine) POST(relativePath string, stream string, handler gin.HandlerFunc) {
 	e.Gin.POST(relativePath, handler)
 	e.Listeners = append(e.Listeners, Listener{"POST", relativePath, stream, handler})
 }
 
-func (e *Engine) GET(relativePath string, stream string, handler func(*gin.Context)) {
+func (e *Engine) GET(relativePath string, stream string, handler gin.HandlerFunc) {
 	e.Gin.GET(relativePath, handler)
 	e.Listeners = append(e.Listeners, Listener{"GET", relativePath, stream, handler})
 }
 
-func (e *Engine) DELETE(relativePath string, stream string, handler func(*gin.Context)) {
+func (e *Engine) DELETE(relativePath string, stream string, handler gin.HandlerFunc) {
 	e.Gin.DELETE(relativePath, handler)
 	e.Listeners = append(e.Listeners, Listener{"DELETE", relativePath, stream, handler})
 }
 
-func (e *Engine) PUT(relativePath string, stream string, handler func(*gin.Context)) {
+func (e *Engine) PUT(relativePath string, stream string, handler gin.HandlerFunc) {
 	e.Gin.PUT(relativePath, handler)
 	e.Listeners = append(e.Listeners, Listener{"PUT", relativePath, stream, handler})
 }
 
-func (e *Engine) PATCH(relativePath string, stream string, handler func(*gin.Context)) {
+func (e *Engine) PATCH(relativePath string, stream string, handler gin.HandlerFunc) {
 	e.Gin.PATCH(relativePath, handler)
 	e.Listeners = append(e.Listeners, Listener{"PATCH", relativePath, stream, handler})
 }

@@ -1,66 +1,20 @@
 package router
 
 import (
-	"net/http"
 	"os"
-	"strings"
-	"time"
 
 	"github.com/TeaMeow/KitSvc/module/metrics"
 	"github.com/TeaMeow/KitSvc/module/sd"
 	"github.com/TeaMeow/KitSvc/router/middleware/header"
 	"github.com/TeaMeow/KitSvc/server"
 	"github.com/TeaMeow/KitSvc/shared/eventutil"
+	"github.com/TeaMeow/KitSvc/shared/mqutil"
+	"github.com/TeaMeow/KitSvc/shared/wsutil"
 	"github.com/gin-gonic/gin"
-	"github.com/olahol/melody"
 )
 
-type route struct {
-	http      string
-	websocket string
-	topic     string
-	channel   string
-	event     string
-	handler   gin.HandlerFunc
-}
-
-func parseHTTP(s string) (method string, path string) {
-	str := strings.Split(s, " ")
-	method, path = str[0], str[1]
-
-	return
-}
-
-func Parse(g *gin.Engine, e *eventutil.Engine, routes []route) {
-	for _, r := range routes {
-		// REST
-		if r.http != "" {
-			method, path := parseHTTP(r.http)
-			g.Handle(method, path, r.handler)
-
-			// Message
-		} else if r.topic != "" {
-
-			// Event
-		} else if r.event != "" {
-			e.POST("/es/"+r.event, r.event, r.handler)
-
-			// WebSocket
-		} else if r.websocket != "" {
-			m := melody.New()
-			m.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
-			g.GET(r.websocket, func(c *gin.Context) {
-				c.Set("websocket", m)
-				r.handler(c)
-			})
-			//m.HandleRequest(c.Writer, c.Request)
-			//m.Broadcast([]byte("Wow"))
-		}
-	}
-}
-
 //
-func Load(g *gin.Engine, e *eventutil.Engine, mw ...gin.HandlerFunc) *gin.Engine {
+func Load(g *gin.Engine, e *eventutil.Engine, w *wsutil.Engine, m *mqutil.Engine, mw ...gin.HandlerFunc) *gin.Engine {
 	// Middlewares.
 	g.Use(gin.LoggerWithWriter(os.Stdout, "/metrics", "/sd/health", "/sd/ram", "/sd/cpu", "/sd/disk"))
 	g.Use(gin.Recovery())
@@ -68,101 +22,6 @@ func Load(g *gin.Engine, e *eventutil.Engine, mw ...gin.HandlerFunc) *gin.Engine
 	g.Use(header.Options)
 	g.Use(header.Secure)
 	g.Use(mw...)
-
-	routes := []route{
-		//
-		{
-			http:    "POST /user",
-			handler: server.CreateUser,
-		},
-		{
-			http:    "GET /user/:username",
-			handler: server.GetUser,
-		},
-		{
-			http:    "DELETE /user/:id",
-			handler: server.DeleteUser,
-		},
-		{
-			http:    "PUT /user/:id",
-			handler: server.UpdateUser,
-		},
-		{
-			http:    "POST /auth",
-			handler: server.Login,
-		},
-
-		//
-		{
-			topic:   "send_mail",
-			channel: "user",
-			handler: server.SendMail,
-		},
-
-		//
-		{
-			event:   "user.created",
-			handler: server.Created,
-		},
-
-		//
-		{
-			websocket: "/ws",
-			handler:   server.WebSocket,
-		},
-	}
-
-	/*
-
-		{
-			http: "POST /user",
-			handler: server.CreateUser,
-		},
-
-
-		{
-			method: "POST",
-			pattern: "/user",
-			handler: server.CreateUser,
-		},
-		{
-			method: "GET",
-			pattern: "/user/:username",
-			handler: server.GetUser
-		},
-		{
-			method: "DELETE",
-			pattern: "/user/:id",
-			handler: server.DeleteUser
-		},
-		{
-			method: "PUT",
-			pattern: "/user/:id",
-			handler: server.UpdateUser
-		},
-		{
-			method: "POST",
-			pattern: "/auth"
-			handler: server.Login
-		}*/
-
-	/*
-		{
-			topic: "send_mail",
-			channel: "user",
-			handler: server.SendMail,
-		}*/
-	/*
-		{
-			//route: "/es/user.created/",
-			event: "user.created",
-			handler: server.Created,
-		}*/
-	/*
-		{
-			websocket: "/ws",
-			handler: server.WebSocket,
-		}*/
 
 	// The common handlers.
 	g.POST("/user", server.CreateUser)
@@ -179,22 +38,14 @@ func Load(g *gin.Engine, e *eventutil.Engine, mw ...gin.HandlerFunc) *gin.Engine
 	g.GET("/sd/ram", sd.RAMCheck)
 	g.GET("/metrics", metrics.PrometheusHandler())
 
-	m := melody.New()
-	m.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
-	g.GET("/websocket", func(c *gin.Context) {
-		m.HandleRequest(c.Writer, c.Request)
-	})
+	// Websockets.
+	w.Handle("/websocket", server.WebSocket)
 
-	go func() {
-		for {
-			time.Sleep(1 * time.Second)
-			m.Broadcast([]byte("Wow"))
-		}
-
-	}()
+	// Message
+	m.Capture("user", "send_mail", server.SendMail)
 
 	// The event handlers.
-	e.POST("/es/user.created/", "user.created", server.Created)
+	e.Capture("user.created", server.Created)
 
 	return g
 }

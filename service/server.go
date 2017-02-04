@@ -10,6 +10,8 @@ import (
 	"github.com/TeaMeow/KitSvc/router"
 	"github.com/TeaMeow/KitSvc/router/middleware"
 	"github.com/TeaMeow/KitSvc/shared/eventutil"
+	"github.com/TeaMeow/KitSvc/shared/mqutil"
+	"github.com/TeaMeow/KitSvc/shared/wsutil"
 	"github.com/codegangsta/cli"
 	"github.com/gin-gonic/gin"
 )
@@ -23,16 +25,22 @@ func server(c *cli.Context) error {
 	gin := gin.New()
 	// Create the event handler struct.
 	event := eventutil.New(gin)
+	//
+	ws := wsutil.New(gin)
+	//
+	mq := mqutil.New(gin)
 
 	// Routes.
 	router.Load(
 		gin,
 		event,
+		ws,
+		mq,
 		middleware.Config(c),
 		middleware.Store(c),
 		middleware.Logging(),
 		middleware.Event(c, event, isPlayed, isReady),
-		middleware.MQ(c),
+		middleware.MQ(c, mq),
 		middleware.Metrics(),
 	)
 

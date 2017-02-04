@@ -13,6 +13,7 @@ import (
 	"github.com/TeaMeow/KitSvc/store"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	"github.com/olahol/melody"
 )
 
 func Created(c *gin.Context) {
@@ -162,4 +163,11 @@ func Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"token": t})
+}
+
+func WebSocket(c *gin.Context) {
+	w, _ := c.Get("websocket")
+	ws := w.(melody.Melody)
+
+	ws.Broadcast([]byte("Wow"))
 }
