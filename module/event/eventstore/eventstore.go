@@ -194,8 +194,10 @@ func (es *eventstore) capture(localUrl string, e *eventutil.Engine, played chan<
 
 func (es *eventstore) push(esURL string) {
 	for {
-		// Check the queue every 2 seconds.
-		<-time.After(time.Second * 2)
+		// Check the queue every second.
+		<-time.After(time.Second * 1)
+
+		//calculate send rateRATE
 
 		// Ping the Event Store to see if it's back online or not.
 		if !es.isConnected {
@@ -221,6 +223,7 @@ func (es *eventstore) push(esURL string) {
 			// Append the event in the stream.
 			err := writer.Append(nil, goes.NewEvent("", "", e.data, e.meta))
 			if err != nil {
+				// ERR HANDLE
 				continue
 			}
 
@@ -235,6 +238,6 @@ func (es *eventstore) send(stream string, data interface{}, meta interface{}) {
 	es.queue = append([]event{event{stream, data, meta}}, es.queue...)
 	//
 	if !es.isConnected {
-		logrus.Warningf("The %s event will be sent when the Event Store is back online. (Queue length: %d)", stream, len(es.queue))
+		logrus.Warningf("The `%s` event will be sent when the Event Store is back online. (Queue length: %d)", stream, len(es.queue))
 	}
 }

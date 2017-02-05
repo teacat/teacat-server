@@ -23,6 +23,8 @@ func Load(g *gin.Engine, e *eventutil.Engine, w *wsutil.Engine, m *mqutil.Engine
 	g.Use(header.Secure)
 	g.Use(mw...)
 
+	//TODO: CIRCU BREAKER
+
 	// The common handlers.
 	g.POST("/user", server.CreateUser)
 	g.GET("/user/:username", server.GetUser)

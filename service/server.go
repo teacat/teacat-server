@@ -18,7 +18,7 @@ import (
 
 func server(c *cli.Context) error {
 	// The ready, event played states.
-	isReady := make(chan bool)
+	isReady := make(chan bool, 2)
 	isPlayed := make(chan bool)
 
 	// Create the Gin engine.
@@ -40,7 +40,7 @@ func server(c *cli.Context) error {
 		middleware.Store(c),
 		middleware.Logging(),
 		middleware.Event(c, event, isPlayed, isReady),
-		middleware.MQ(c, mq),
+		middleware.MQ(c, mq, isReady),
 		middleware.Metrics(),
 	)
 
@@ -57,6 +57,7 @@ func server(c *cli.Context) error {
 
 		logrus.Infoln("The router has been deployed successfully.")
 		// Send `true` to the `isReady` channel if the router is ready to use.
+		isReady <- true
 		isReady <- true
 	}()
 

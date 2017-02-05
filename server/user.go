@@ -53,9 +53,11 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 	//
-	if err := mq.SendMail(c, &u); err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-	}
+	//if err := mq.SendMail(c, &u); err != nil {
+	//	c.AbortWithError(http.StatusInternalServerError, err)
+	//	return
+	//}
+	go mq.SendMail(c, &u)
 
 	go event.UserCreated(c, &u)
 
@@ -170,4 +172,8 @@ func WebSocket(c *gin.Context) {
 	ws := w.(melody.Melody)
 
 	ws.Broadcast([]byte("Wow"))
+}
+
+func SendMail(c *gin.Context) {
+
 }
