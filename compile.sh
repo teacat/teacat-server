@@ -3,9 +3,9 @@ cd service
 go build -o ../bin/main
 cd ../
 export KITSVC_NAME="User"
-export KITSVC_URL="http://127.0.0.1:8888"
-export KITSVC_ADDR="127.0.0.1:8888"
-export KITSVC_PORT=8888
+export KITSVC_URL="http://127.0.0.1:8080"
+export KITSVC_ADDR="127.0.0.1:8080"
+export KITSVC_PORT=8080
 export KITSVC_USAGE="Operations about the string."
 export KITSVC_JWT_SECRET="4Rtg8BPKwixXy2ktDPxoMMAhRzmo9mmuZjvKONGPZZQSaJWNLijxR42qRgq0iBb5"
 export KITSVC_VERSION="0.0.1"
@@ -20,7 +20,7 @@ export KITSVC_DATABASE_PARSE_TIME="True"
 
 export KITSVC_NSQ_PRODUCER="127.0.0.1:4150"
 export KITSVC_NSQ_PRODUCER_HTTP="127.0.0.1:4151"
-export KITSVC_NSQ_LOOKUPS="127.0.0.1:4161"
+export KITSVC_NSQ_LOOKUPDS="127.0.0.1:4161"
 
 export KITSVC_ES_SERVER_URL="http://127.0.0.1:2113"
 export KITSVC_ES_USERNAME="admin"

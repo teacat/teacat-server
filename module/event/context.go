@@ -1,8 +1,6 @@
 package event
 
-import (
-	"golang.org/x/net/context"
-)
+import "golang.org/x/net/context"
 
 const Key = "event"
 

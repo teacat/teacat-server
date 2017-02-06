@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -22,7 +21,7 @@ func Created(c *gin.Context) {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	fmt.Println(u)
+	//fmt.Println(u)
 }
 
 //

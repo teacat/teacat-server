@@ -13,6 +13,13 @@ import (
 	"github.com/parnurzeal/gorequest"
 )
 
+var (
+	AllConnected = false
+	SentTotal    = 0
+	RecvTotal    = 0
+	QueueTotal   = 0
+)
+
 type eventstore struct {
 	*goes.Client
 	isConnected bool
@@ -40,7 +47,12 @@ func NewClient(url string, esURL string, username string, password string, e *ev
 	// Set the username, password
 	client.SetBasicAuth(username, password)
 
-	es := &eventstore{client, true, []event{}}
+	es := &eventstore{
+		Client:      client,
+		isConnected: true,
+	}
+	//
+	AllConnected = true
 
 	// Capturing the events when the router was ready in the goroutine.
 	go es.capture(url, e, played, ready)
@@ -78,6 +90,7 @@ func sendToRouter(method string, url string, json []byte) {
 		Send(string(json)).
 		End()
 	if err != nil {
+		// DO NOT FATA DIE
 		logrus.Errorln(err)
 		logrus.Fatalln("Error occurred while sending the event to self router.")
 	}
@@ -154,6 +167,7 @@ func (es *eventstore) capture(localUrl string, e *eventutil.Engine, played chan<
 						// Sleep for few seconds and try again if the Event Store was not connected.
 					case *url.Error, *goes.ErrTemporarilyUnavailable:
 						es.isConnected = false
+						AllConnected = false
 						<-time.After(time.Duration(3) * time.Second)
 
 						// Other errors.
@@ -180,7 +194,10 @@ func (es *eventstore) capture(localUrl string, e *eventutil.Engine, played chan<
 						continue
 					}
 
+					//
 					totalEvents++
+					RecvTotal++
+
 					// Send the received data to the router,
 					// so we can process the event in the router.
 					go sendToRouter(l.Method, localUrl+l.Path, json)
@@ -195,7 +212,7 @@ func (es *eventstore) capture(localUrl string, e *eventutil.Engine, played chan<
 func (es *eventstore) push(esURL string) {
 	for {
 		// Check the queue every second.
-		<-time.After(time.Second * 1)
+		<-time.After(time.Millisecond * 10)
 
 		//calculate send rateRATE
 
@@ -203,6 +220,7 @@ func (es *eventstore) push(esURL string) {
 		if !es.isConnected {
 			if err := pingStore(esURL); err == nil {
 				es.isConnected = true
+				AllConnected = true
 
 				logrus.Infof("Event Store is back online, there are %d unsent events that will begin to send.", len(es.queue))
 			}
@@ -217,7 +235,8 @@ func (es *eventstore) push(esURL string) {
 		// A downward loop for the queue.
 		for i := len(es.queue) - 1; i >= 0; i-- {
 			e := es.queue[i]
-
+			//
+			<-time.After(time.Millisecond * 2)
 			// create the stream write.
 			writer := es.NewStreamWriter(e.stream)
 			// Append the event in the stream.
@@ -226,7 +245,8 @@ func (es *eventstore) push(esURL string) {
 				// ERR HANDLE
 				continue
 			}
-
+			//
+			QueueTotal--
 			// Remove the event from the queue since it has been sent.
 			es.queue = append(es.queue[:i], es.queue[i+1:]...)
 		}
@@ -236,6 +256,10 @@ func (es *eventstore) push(esURL string) {
 func (es *eventstore) send(stream string, data interface{}, meta interface{}) {
 	// Prepend to keep the order, because the push queue is a downward loop.
 	es.queue = append([]event{event{stream, data, meta}}, es.queue...)
+	//
+	SentTotal++
+	//
+	QueueTotal++
 	//
 	if !es.isConnected {
 		logrus.Warningf("The `%s` event will be sent when the Event Store is back online. (Queue length: %d)", stream, len(es.queue))

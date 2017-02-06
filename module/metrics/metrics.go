@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/TeaMeow/KitSvc/module/event/eventstore"
+	"github.com/TeaMeow/KitSvc/module/mq/mqstore"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -34,15 +36,19 @@ type Metrics struct {
 	msgRecvTotal, msgSentTotal, msgErrTotal,
 	// CounterVec: Event
 	evntRecvTotal, evntSentTotal, evntErrTotal *prometheus.CounterVec
+
 	// Summary: Request & Response
 	reqDuration, reqSize, respSize prometheus.Summary
+
 	// circurit breaker
 	// Gauge: Uptime
 	uptime,
 	// Gauge: Event
-	evntUnsent, evntRecv, evntSent,
+	evntUnsent, evntRecv, evntSent, evntOnline,
+	// Gauge: Request
+	req, recv,
 	// Gauge: Message
-	msgUnsent, msgRecv, msgSent,
+	msgUnsent, msgRecv, msgSent, msgOnline,
 	// Gauge: CPU
 	cpuCores, cpuUsage, cpuSystemUsage, cpuUserUsage, cpuLoad1, cpuLoad5, cpuLoad15,
 	// Gauge: Memory
@@ -55,8 +61,14 @@ type Metrics struct {
 	networkIn, networkOut, networkInTotal, networkOutTotal, networkInPkt, networkOutPkt prometheus.Gauge
 
 	//
-	lastOutbound uint64
-	lastInbound  uint64
+	lastOutbound,
+	lastInbound,
+	//
+	lastEvntRecv,
+	lastEvntSent,
+	//
+	lastMsgRecv,
+	lastMsgSent uint64
 }
 
 type information struct {
@@ -161,6 +173,56 @@ func (m *Metrics) instrument() error {
 	return nil
 }
 
+func (m *Metrics) instruEvent() {
+	for {
+		<-time.After(time.Second * 1)
+
+		queueTotal, recvTotal, sentTotal, allConnected :=
+			eventstore.QueueTotal,
+			eventstore.RecvTotal,
+			eventstore.SentTotal,
+			eventstore.AllConnected
+
+		connected := 0
+		if allConnected {
+			connected = 1
+		}
+
+		m.evntOnline.Set(float64(connected))
+		m.evntUnsent.Set(float64(queueTotal))
+		m.evntRecv.Set(float64(recvTotal - int(m.lastEvntRecv)))
+		m.evntSent.Set(float64(sentTotal - int(m.lastEvntSent)))
+
+		m.lastEvntRecv = uint64(recvTotal)
+		m.lastEvntSent = uint64(sentTotal)
+	}
+}
+
+func (m *Metrics) instruMessage() {
+	for {
+		<-time.After(time.Second * 1)
+
+		queueTotal, recvTotal, sentTotal, allConnected :=
+			mqstore.QueueTotal,
+			mqstore.RecvTotal,
+			mqstore.SentTotal,
+			mqstore.AllConnected
+
+		connected := 0
+		if allConnected {
+			connected = 1
+		}
+
+		m.msgOnline.Set(float64(connected))
+		m.msgUnsent.Set(float64(queueTotal))
+		m.msgRecv.Set(float64(recvTotal - int(m.lastMsgRecv)))
+		m.msgSent.Set(float64(sentTotal - int(m.lastMsgSent)))
+
+		m.lastMsgRecv = uint64(recvTotal)
+		m.lastMsgSent = uint64(sentTotal)
+	}
+}
+
 func (m *Metrics) instruNetwork() {
 	for {
 		<-time.After(time.Second * 1)
@@ -194,12 +256,25 @@ func (m *Metrics) instruRequest(c *gin.Context) {
 	m.respSize.Observe(respSize)
 }
 
+/*func (m *Metrics) setESInfo(connected bool, queueLen, sentTotal, recvTotal int) {
+
+}*/
+
+/*func (m *Metrics) setMQInfo(connected bool, queueLen, sentTotal, recvTotal int) {
+
+}*/
+
 //
 func (m *Metrics) Handler() gin.HandlerFunc {
 	// Keep instrumenting the network traffic.
 	go m.instruNetwork()
+	//
+	go m.instruEvent()
+	//
+	go m.instruMessage()
 
 	return func(c *gin.Context) {
+
 		switch c.Request.URL.String() {
 
 		// Ignore the health check in instrumenting.
@@ -219,7 +294,10 @@ func (m *Metrics) Handler() gin.HandlerFunc {
 		default:
 			// Modifiy the event total if it's an event request.
 			if strings.Contains(c.Request.URL.String(), "/es/") {
-				m.evntRecvTotal.WithLabelValues(c.Request.Method, c.HandlerName()).Inc()
+				m.evntRecvTotal.WithLabelValues(c.HandlerName()).Inc()
+			}
+			if strings.Contains(c.Request.URL.String(), "/mq/") {
+				m.msgRecvTotal.WithLabelValues(c.HandlerName()).Inc()
 			}
 			go m.instruRequest(c)
 			c.Next()
@@ -235,7 +313,7 @@ func PrometheusHandler() gin.HandlerFunc {
 }
 
 func New() *Metrics {
-	m := &Metrics{lastOutbound: 0, lastInbound: 0}
+	m := &Metrics{}
 	startTime = time.Now()
 
 	// Uptime
@@ -436,7 +514,7 @@ func New() *Metrics {
 			Name: "event_received_total",
 			Help: "Total number of the receivied events.",
 		},
-		[]string{"method", "handler"},
+		[]string{"handler"},
 	)
 	prometheus.MustRegister(m.evntRecvTotal)
 	m.evntSentTotal = prometheus.NewCounterVec(
@@ -455,6 +533,72 @@ func New() *Metrics {
 		[]string{"event"},
 	)
 	prometheus.MustRegister(m.evntErrTotal)
+	m.evntUnsent = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "event_unsent",
+		Help: "The total of the unsent events.",
+	})
+	prometheus.MustRegister(m.evntUnsent)
+	m.evntRecv = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "event_received",
+		Help: "The amount of the received events in a second.",
+	})
+	prometheus.MustRegister(m.evntRecv)
+	m.evntSent = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "event_sent",
+		Help: "The amount of the sent events in a second.",
+	})
+	prometheus.MustRegister(m.evntSent)
+	m.evntOnline = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "event_online",
+		Help: "1 if connected to the Event Store, otherwise 0.",
+	})
+	prometheus.MustRegister(m.evntOnline)
+
+	// Messages
+	m.msgRecvTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "message_received_total",
+			Help: "Total number of the receivied messages.",
+		},
+		[]string{"handler"},
+	)
+	prometheus.MustRegister(m.msgRecvTotal)
+	m.msgSentTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "message_sent_total",
+			Help: "Total number of the sent messages.",
+		},
+		[]string{"topic"},
+	)
+	prometheus.MustRegister(m.msgSentTotal)
+	m.msgErrTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "message_error_total",
+			Help: "Total count of the error occurred while sending the messages.",
+		},
+		[]string{"topic"},
+	)
+	prometheus.MustRegister(m.msgErrTotal)
+	m.msgUnsent = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "message_unsent",
+		Help: "The total of the unsent messages.",
+	})
+	prometheus.MustRegister(m.msgUnsent)
+	m.msgRecv = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "message_received",
+		Help: "The amount of the received messages in a second.",
+	})
+	prometheus.MustRegister(m.msgRecv)
+	m.msgSent = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "message_sent",
+		Help: "The amount of the sent messages in a second.",
+	})
+	prometheus.MustRegister(m.msgSent)
+	m.msgOnline = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "message_online",
+		Help: "1 if connected to the NSQ Producer, otherwise 0.",
+	})
+	prometheus.MustRegister(m.msgOnline)
 
 	return m
 }

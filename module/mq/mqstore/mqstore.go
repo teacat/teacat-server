@@ -15,6 +15,13 @@ import (
 	"github.com/parnurzeal/gorequest"
 )
 
+var (
+	AllConnected = false
+	SentTotal    = 0
+	RecvTotal    = 0
+	QueueTotal   = 0
+)
+
 type mqstore struct {
 	*nsq.Producer
 	config      *nsq.Config
@@ -35,13 +42,17 @@ func NewProducer(url, producer, prodHTTP string, lookupds []string, m *mqutil.En
 
 	config := nsq.NewConfig()
 	prod, err := nsq.NewProducer(producer, config)
-	prod.SetLogger(nil, nsq.LogLevelError)
+	//prod.SetLogger(nil, nsq.LogLevelError)
 	if err != nil {
 		logrus.Errorln(err)
 		logrus.Fatalln("Error occurred while creating the NSQ producer.")
 	}
 
-	ms := &mqstore{prod, config, true, []message{}}
+	ms := &mqstore{
+		Producer:    prod,
+		config:      config,
+		isConnected: true,
+	}
 
 	go ms.capture(url, prodHTTP, lookupds, m, ready)
 
@@ -89,21 +100,23 @@ func createTopic(topic, httpProducer string) {
 	cmd.Wait()
 }
 
-func (ms *mqstore) capture(url string, prodHTTP string, lookupds []string, m *mqutil.Engine, ready <-chan bool) {
+func (mq *mqstore) capture(url string, prodHTTP string, lookupds []string, m *mqutil.Engine, ready <-chan bool) {
 	// Continue if the router was ready.
 	<-ready
 
 	for _, v := range m.Listeners {
-		fmt.Println(v)
 		c, err := nsq.NewConsumer(v.Topic, v.Channel, nsq.NewConfig())
-		c.SetLogger(nil, nsq.LogLevelError)
+		//c.SetLogger(nil, nsq.LogLevelError)
 		if err != nil {
 			logrus.Errorln(err)
 			logrus.Fatalf("Cannot create the NSQ `%s` consumer. (channel: %s)", v.Topic, v.Channel)
 		}
+		//
+		createTopic(prodHTTP, v.Path)
+		//
 		c.AddHandler(nsq.HandlerFunc(func(msg *nsq.Message) error {
 			//
-			createTopic(prodHTTP, v.Path)
+			RecvTotal++
 			//
 			sendToRouter(v.Method, url+v.Path, msg.Body)
 
@@ -123,12 +136,11 @@ func (mq *mqstore) push(prodHTTP string) {
 		// Check the queue every second.
 		<-time.After(time.Second * 1)
 
-		//calculate send rateRATE
-
 		// Ping the Event Store to see if it's back online or not.
 		if !mq.isConnected {
 			if err := pingMQ(prodHTTP); err == nil {
 				mq.isConnected = true
+				AllConnected = true
 
 				logrus.Infof("NSQ Producer is back online, there are %d unsent messages that will begin to send.", len(mq.queue))
 			}
@@ -143,13 +155,15 @@ func (mq *mqstore) push(prodHTTP string) {
 		// A downward loop for the queue.
 		for i := len(mq.queue) - 1; i >= 0; i-- {
 			m := mq.queue[i]
-
+			//
+			<-time.After(time.Millisecond * 2)
 			// Append the event in the stream.
 			err := mq.Publish(m.topic, m.body)
 			if err != nil {
 				continue
 			}
-
+			//
+			QueueTotal--
 			// Remove the event from the queue since it has been sent.
 			mq.queue = append(mq.queue[:i], mq.queue[i+1:]...)
 		}
@@ -161,14 +175,21 @@ func (mq *mqstore) send(topic string, data interface{}) {
 	if err != nil {
 		//return err
 	}
+	//
+	SentTotal++
+
+	//
 	if err := mq.Publish(topic, body); err != nil {
 		switch t := err.(type) {
 		case *net.OpError:
 			// Mayne connect refuse
 			if t.Op == "dial" {
 				mq.isConnected = false
+				AllConnected = false
 				mq.queue = append([]message{message{topic, body}}, mq.queue...)
-				logrus.Warningf("The `%s` message will be sent when the NSQ Producer is back online. (Queue length: %d)", topic, len(mq.queue))
+				QueueTotal++
+
+				logrus.Warningf("The `%s` message will be sent when the NSQ Producer is back online. (queue length: %d)", topic, len(mq.queue))
 			}
 		}
 	}
