@@ -1,90 +1,15 @@
 pipeline:
   build:
-    image: ubuntu:$$UBUNTU_VERSION
+    image: golang:${GO_VERSION}
     commands:
+      - go get
+      - go build
+      - go test
 
-      # initialize
-      - printf "%s\n------------------------------\n----  I N I T I A L I Z E ----\n------------------------------%s\n%s\n"
-      - export TERM=xterm
-      - apt-get update
-      - apt-get -y install dialog
-      - apt-get -y install zip
-      - apt-get -y install unzip
-      - apt-get -y install wget
-      - apt-get -y install curl
-      - apt-get -y install nodejs
-      - apt-get -y install npm
-      - apt-get -y install rubygems ruby-dev
-
-      # ruby
-      - printf "%s\n------------------------------\n----------  R U B Y ----------\n------------------------------%s\n%s\n"
-      - chmod +x test/ruby.sh
-      - test/ruby.sh
-
-      # coffee
-      - printf "%s\n------------------------------\n--------  C O F F E E --------\n------------------------------%s\n%s\n"
-      - npm install -g coffee-script
-      - ln -s /usr/bin/nodejs /usr/bin/node
-
-      # sass
-      - printf "%s\n------------------------------\n----------  S A S S ----------\n------------------------------%s\n%s\n"
-      - chmod +x test/sass.sh
-      - test/sass.sh
-
-      # php7
-      - printf "%s\n------------------------------\n-----------  P H P -----------\n------------------------------%s\n%s\n"
-      - apt-get -y install curl php7.0-cli php7.0-dev git
-      - apt-get -y install php-xml
-      - apt-get -y install php-mysql
-      - apt-get -y install php-curl
-
-      # xdebug
-      - printf "%s\n------------------------------\n--------  X D E B U G --------\n------------------------------%s\n%s\n"
-      - wget http://xdebug.org/files/xdebug-2.4.0rc2.tgz
-      - tar -xzf xdebug-2.4.0rc2.tgz
-      - cd xdebug-2.4.0RC2/
-      - phpize
-      - ./configure --enable-xdebug
-      - make
-      - cp modules/xdebug.so /usr/lib/.
-      - touch /etc/php/7.0/cli/conf.d/20-xdebug.ini
-      - echo 'zend_extension="/usr/lib/xdebug.so"' > /etc/php/7.0/cli/conf.d/20-xdebug.ini
-      - echo 'xdebug.remote_enable=1' >> /etc/php/7.0/cli/conf.d/20-xdebug.ini
-      - cd ../
-
-      # composer
-      - printf "%s\n------------------------------\n------  C O M P O S E R ------\n------------------------------%s\n%s\n"
-      - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-      - wget https://github.com/satooshi/php-coveralls/releases/download/v1.0.0/coveralls.phar
-      - chmod +x coveralls.phar
-      - composer self-update
-      - composer clear-cache
-      - composer install
-
-      # phpunit
-      - printf "%s\n------------------------------\n------  P H P   U N I T ------\n------------------------------%s\n%s\n"
-      - curl -LO --silent https://phar.phpunit.de/phpunit.phar
-      - chmod +x phpunit.phar
-      - mv phpunit.phar /usr/local/bin/phpunit
-
-      # versions
-      - printf "%s\n------------------------------\n-------  V E R S I O N -------\n------------------------------%s\n%s\n"
-      - php -v
-      - git --version
-      - composer --version
-      - phpunit --version
-
-      # dependencies, tests.
-      - printf "%s\n------------------------------\n---------  S T A R T ---------\n------------------------------%s\n%s\n"
-      - mkdir -p build/logs
-      - git submodule update --init --recursive
-      - phpunit -c phpunit.xml
-      - ls build/logs
-
-      # coveralls
-      - printf "%s\n------------------------------\n-----  C O V E R A L L S -----\n------------------------------%s\n%s\n"
-      - php coveralls.phar -v -x build/logs/clover.xml
-
-  matrix:
-    UBUNTU_VERSION:
-      - 16.04
+matrix:
+  GO_VERSION:
+    - 1.7
+    - 1.6
+    - 1.5
+    - 1.4
+    - 1.3
