@@ -2,9 +2,10 @@ pipeline:
   build:
     image: golang:${GO_VERSION}
     commands:
-      - go get
-      - go build
-      - go test
+      //- go get
+      //- go build
+      //- go test
+      - echo "Wow"
 
 matrix:
   GO_VERSION:
