@@ -10,3 +10,4 @@ matrix:
   GO_VERSION:
     - 1.7
     - 1.6
+    - 1.5
