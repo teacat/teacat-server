@@ -1,17 +1,29 @@
 pipeline:
-  build:
-    image: golang:${GO_VERSION}
-    commands:
-      - echo "Wow"
-  mq:
+  nsqlookupd:
     image: nsqio/nsq
     detach: true
     commands:
       - /nsqlookupd
+  nsqd:
+    image: nsqio/nsq
+    detach: true
+    commands:
+      - ./nsqd --lookupd-tcp-address=127.0.0.1:4160 --broadcast-address=127.0.0.1
+  consul:
+    image: prom/prometheus
+    detach: true
+    commands:
+      - agent -dev
+  build:
+    image: golang:${GO_VERSION}
+    commands:
+      - echo "Wow"
 
 services:
   eventstore:
     image: eventstore/eventstore
+  prometheus:
+    image: prom/prometheus
   database:
     image: mysql
 
