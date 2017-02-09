@@ -3,14 +3,17 @@ pipeline:
     image: golang:${GO_VERSION}
     commands:
       - echo "Wow"
+  mq:
+    image: nsqio/nsq
+    detach: true
+    commands:
+      - /nsqlookupd
 
 services:
   eventstore:
     image: eventstore/eventstore
   database:
     image: mysql
-  mq:
-    image: nsqio/nsq /nsqlookupd
 
 matrix:
   GO_VERSION:
