@@ -13,7 +13,7 @@ pipeline:
     image: consul
     detach: true
     commands:
-      - agent -dev
+      - /agent -dev
   build:
     image: golang:${GO_VERSION}
     commands:
