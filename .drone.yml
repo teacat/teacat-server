@@ -10,10 +10,10 @@ pipeline:
     commands:
       - /nsqd --lookupd-tcp-address=127.0.0.1:4160 --broadcast-address=127.0.0.1
   consul:
-    image: prom/prometheus
+    image: consul
     detach: true
     commands:
-      - /agent -dev
+      - agent -dev
   build:
     image: golang:${GO_VERSION}
     commands:
