@@ -6,7 +6,7 @@ pipeline:
 
 services:
   eventstore:
-    images: eventstore/eventstore
+    image: eventstore/eventstore
 
 matrix:
   GO_VERSION:
