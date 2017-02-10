@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
+	"github.com/TeaMeow/KitSvc/client"
+	"github.com/TeaMeow/KitSvc/model"
 	"github.com/TeaMeow/KitSvc/version"
 	"github.com/codegangsta/cli"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +19,8 @@ DeleteUser(int, *model.User) (*model.User, []error)
 PostAuth(*model.User) (string, []error)*/
 
 //
-var serverReady = make(chan bool)
+var started = make(chan bool)
+var c = client.NewClient("http://127.0.0.1:8080")
 
 func TestMain(t *testing.T) {
 	app := cli.NewApp()
@@ -24,17 +28,37 @@ func TestMain(t *testing.T) {
 	app.Version = version.Version
 	app.Usage = "starts the service daemon."
 	app.Action = func(c *cli.Context) {
-		server(c, serverReady)
+		server(c, started)
 	}
 	app.Flags = serverFlags
 
 	go app.Run(os.Args)
-	<-serverReady
+
+	<-started
+}
+
+func printErrors(e []error) {
+	if len(e) != 0 {
+		for _, v := range e {
+			fmt.Println(v.Error())
+		}
+	}
 }
 
 func TestPostUser(t *testing.T) {
 	assert := assert.New(t)
-	assert.Equal(123, 123, "they should be equal")
+
+	u, errs := c.PostUser(&model.User{
+		Username: "admin",
+		Password: "test",
+	})
+	printErrors(errs)
+
+	assert.Equal(&model.User{
+		ID:       1,
+		Username: "admin",
+		Password: "test",
+	}, u, "They should be equal.")
 }
 
 func TestGetUser(t *testing.T) {
