@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/TeaMeow/KitSvc/client"
 	"github.com/TeaMeow/KitSvc/model"
 	"github.com/TeaMeow/KitSvc/version"
@@ -40,7 +40,7 @@ func TestMain(t *testing.T) {
 func printErrors(e []error) {
 	if len(e) != 0 {
 		for _, v := range e {
-			fmt.Println(v.Error())
+			logrus.Error(v.Error())
 		}
 	}
 }
@@ -50,14 +50,14 @@ func TestPostUser(t *testing.T) {
 
 	u, errs := c.PostUser(&model.User{
 		Username: "admin",
-		Password: "test",
+		Password: "testtest",
 	})
 	printErrors(errs)
 
 	assert.Equal(&model.User{
 		ID:       1,
 		Username: "admin",
-		Password: "test",
+		Password: "testtest",
 	}, u, "They should be equal.")
 }
 

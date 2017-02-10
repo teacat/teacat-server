@@ -1,6 +1,9 @@
 package client
 
 import (
+	"encoding/json"
+	"errors"
+
 	"github.com/TeaMeow/KitSvc/model"
 	"github.com/parnurzeal/gorequest"
 )
@@ -20,12 +23,21 @@ func NewClient(uri string) Client {
 	return &client{base: uri}
 }
 
-func (c *client) PostUser(in *model.User) (out *model.User, err []error) {
-	_, _, err = gorequest.
+func (c *client) PostUser(in *model.User) (out *model.User, errs []error) {
+	gorequest.
 		New().
 		Post(uri(pathUser, c.base)).
 		Send(in).
-		EndStruct(&out)
+		End(func(resp gorequest.Response, b string, e []error) {
+			if resp.StatusCode < 300 {
+				if err := json.Unmarshal([]byte(b), &out); err != nil {
+					panic(err)
+				}
+				return
+			}
+			errs = e
+			errs = append(errs, errors.New(b))
+		})
 	return
 }
 

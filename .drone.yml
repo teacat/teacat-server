@@ -17,17 +17,12 @@ pipeline:
       - GOPATH=/drone
     commands:
       # initialize
-      - printf "\n------------------------------\n---------  S T A R T ---------\n------------------------------\n\n" &> /dev/null
       - apt update
       - apt install tree
       # tree
-      - printf "\n------------------------------\n---------   T R E E  ---------\n------------------------------\n\n" &> /dev/null
       - tree -I 'vendor'
-      # dependencies
-      - printf "%s\n------------------------------\n---------   D E P S  ---------\n------------------------------\n\n" &> /dev/null
+      # dependencies, tests
       - go get ./...
-      # tests
-      - printf "\n------------------------------\n---------  S T A R T ---------\n------------------------------\n\n" &> /dev/null
       - chmod +x ./test.sh
       - ./test.sh
 
