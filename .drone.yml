@@ -14,7 +14,8 @@ pipeline:
   build:
     image: golang:${GO_VERSION}
     commands:
-      - echo "Wow"
+      - chmod +x ./test.sh
+      - ./test.sh
 
 #
 services:
@@ -28,6 +29,7 @@ services:
     image: mysql
     environment:
       - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=service
 
   consul:
     image: consul
