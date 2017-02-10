@@ -16,6 +16,8 @@ pipeline:
     environment:
       - GOPATH=/drone
     commands:
+      - apt install tree
+      - tree
       - go get ./..
       - chmod +x ./test.sh
       - ./test.sh
