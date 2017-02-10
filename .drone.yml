@@ -14,7 +14,8 @@ pipeline:
   build:
     image: golang:${GO_VERSION}
     commands:
-      - go get ./...
+      - go install ./...
+      - go get ./..
       - chmod +x ./test.sh
       - ./test.sh
 
