@@ -14,6 +14,11 @@ pipeline:
   build:
     image: golang:${GO_VERSION}
     commands:
+      - mkdir $GOPATH/github.com
+      - mkdir $GOPATH/github.com/TeaMeow
+      - mkdir $GOPATH/github.com/TeaMeow/KitSvc
+      - mv /drone/src/github.com/TeaMeow/KitSvc $GOPATH/github.com/TeaMeow/KitSvc
+      - cd $GOPATH/github.com/TeaMeow/KitSvc
       - go install ./...
       - go get ./..
       - chmod +x ./test.sh
