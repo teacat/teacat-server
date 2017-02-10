@@ -1,7 +1,3 @@
-rm ./bin/main
-cd service
-go build -o ../bin/main
-cd ../
 export KITSVC_NAME="User"
 export KITSVC_URL="http://127.0.0.1:8080"
 export KITSVC_ADDR="127.0.0.1:8080"
@@ -31,6 +27,6 @@ export KITSVC_PROMETHEUS_NAMESPACE="string_service"
 export KITSVC_CONSUL_CHECK_INTERVAL="30s"
 export KITSVC_CONSUL_CHECK_TIMEOUT="1s"
 export KITSVC_CONSUL_TAGS="string,micro"
-./bin/main
+go test ./service
 
 #protoc --go_out=. ./pb/*.proto
