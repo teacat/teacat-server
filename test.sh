@@ -27,4 +27,4 @@ export KITSVC_PROMETHEUS_NAMESPACE="string_service"
 export KITSVC_CONSUL_CHECK_INTERVAL="30s"
 export KITSVC_CONSUL_CHECK_TIMEOUT="1s"
 export KITSVC_CONSUL_TAGS="string,micro"
-go test ./service
+go test

@@ -1,7 +1,5 @@
 rm ./bin/main
-cd service
-go build -o ../bin/main
-cd ../
+go build -o ./bin/main
 export KITSVC_NAME="User"
 export KITSVC_URL="http://127.0.0.1:8080"
 export KITSVC_ADDR="127.0.0.1:8080"

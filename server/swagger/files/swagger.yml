@@ -1,0 +1,123 @@
+---
+swagger: "2.0"
+
+################################################################################
+#                              API Information                                 #
+################################################################################
+info:
+  version: 1.0.0
+  title: Microservice API
+  description: Hello, world!
+
+################################################################################
+#                  Host, Base Path, Schemes and Content Types                  #
+################################################################################
+host: localhost:8080
+basePath: /
+schemes:
+  - http
+  - https
+produces:
+  - application/json
+consumes:
+  - application/json
+
+################################################################################
+#                                   Tags                                       #
+################################################################################
+tags:
+  - name: User
+
+################################################################################
+#                                  Security                                    #
+################################################################################
+
+################################################################################
+#                                 Parameters                                   #
+################################################################################
+
+################################################################################
+#                                    Paths                                     #
+################################################################################
+paths:
+    /user:
+      post:
+        parameters:
+          - name: body
+            in: body
+            description: The new user data.
+            schema:
+              $ref: "#/definitions/User"
+        tags:
+          - User
+        responses:
+          200:
+            description: The user data which just created.
+            schema:
+              $ref: "#/definitions/User"
+      delete:
+        parameters:
+          - name: id
+            in: body
+            required: true
+            description: The identifier of the user.
+            schema:
+              type: integer
+              example: 152
+        tags:
+          - User
+        responses:
+          200:
+            description: The user has been deleted successfully.
+      put:
+        parameters:
+          - name: body
+            in: body
+            description: The modified user data.
+            schema:
+              $ref: "#/definitions/User"
+        tags:
+          - User
+        responses:
+          200:
+            description: The user data has been updated successfully.
+
+    /user/{username}:
+      get:
+        parameters:
+          - name: username
+            in: path
+            type: string
+            required: true
+            description: The username of the account.
+        tags:
+          - User
+        responses:
+          200:
+            description: The user data.
+            schema:
+              $ref: "#/definitions/User"
+
+################################################################################
+#                                 Definitions                                  #
+################################################################################
+definitions:
+  User:
+    type: object
+    description: The user account.
+    example: |
+      {
+        "id": 1,
+        "username": "YamiOdymel",
+        "password": "h234l3j6bk4msdfpoeoprw"
+      }
+    properties:
+      id:
+        type: integer
+        description: The unique identifier for the account.
+      username:
+        type: string
+        description: The username for the account.
+      password:
+        type: string
+        description: The password for the account.
