@@ -173,10 +173,9 @@ var serverFlags = []cli.Flag{
 	},
 }
 
-func server(c *cli.Context, serverReady chan<- bool) error {
-	// The ready, event played states.
-	isReady := make(chan bool, 2)
-	isPlayed := make(chan bool)
+func server(c *cli.Context, started chan bool) error {
+	deployed := make(chan bool)
+	replayed := make(chan bool)
 
 	// Create the Gin engine.
 	gin := gin.New()
@@ -196,13 +195,16 @@ func server(c *cli.Context, serverReady chan<- bool) error {
 		middleware.Config(c),
 		middleware.Store(c),
 		middleware.Logging(),
-		middleware.Event(c, event, isPlayed, isReady),
-		middleware.MQ(c, mq, isReady),
+		middleware.Event(c, event, replayed, deployed),
+		middleware.MQ(c, mq, deployed),
 		middleware.Metrics(),
 	)
 
 	// And register the service to the service registry when the events were replayed in the goroutine.
-	go sd.Wait(c, isPlayed)
+	go func() {
+		sd.Wait(c, replayed)
+		close(started)
+	}()
 
 	// We only do those things when the router is ready to use.
 	go func() {
@@ -214,9 +216,7 @@ func server(c *cli.Context, serverReady chan<- bool) error {
 
 		logrus.Infoln("The router has been deployed successfully.")
 		// Send `true` to the `isReady` channel if the router is ready to use.
-		isReady <- true
-		isReady <- true
-		serverReady <- true
+		close(deployed)
 	}()
 
 	// Start to listening the incoming requests.

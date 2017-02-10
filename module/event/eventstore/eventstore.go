@@ -33,7 +33,7 @@ type event struct {
 }
 
 // newClient creates a new event store client.
-func NewClient(url string, esURL string, username string, password string, e *eventutil.Engine, played chan<- bool, ready <-chan bool) *eventstore {
+func NewClient(url string, esURL string, username string, password string, e *eventutil.Engine, replayed chan<- bool, deployed <-chan bool) *eventstore {
 	// Ping the Event Store to make sure it's alive.
 	if err := pingStore(esURL); err != nil {
 		logrus.Fatalln(err)
@@ -55,7 +55,7 @@ func NewClient(url string, esURL string, username string, password string, e *ev
 	AllConnected = true
 
 	// Capturing the events when the router was ready in the goroutine.
-	go es.capture(url, e, played, ready)
+	go es.capture(url, e, replayed, deployed)
 
 	// Pushing the events in the local queue to Event Store.
 	go es.push(esURL)
@@ -105,9 +105,9 @@ func isEmptyEvent(json []byte) bool {
 }
 
 //
-func (es *eventstore) capture(localUrl string, e *eventutil.Engine, played chan<- bool, ready <-chan bool) {
-	// Continue if the router was ready.
-	<-ready
+func (es *eventstore) capture(localUrl string, e *eventutil.Engine, replayed chan<- bool, deployed <-chan bool) {
+	//
+	<-deployed
 
 	playedStreams := 0
 	totalStreams := len(e.Listeners)
@@ -144,7 +144,7 @@ func (es *eventstore) capture(localUrl string, e *eventutil.Engine, played chan<
 							)
 							// Set the `played` as true once we have replayed all the event streams.
 							if playedStreams >= totalStreams {
-								played <- true
+								close(replayed)
 							}
 						}
 

@@ -8,21 +8,21 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func MQ(c *cli.Context, m *mqutil.Engine, ready <-chan bool) gin.HandlerFunc {
-	v := setupMQ(c, m, ready)
+func MQ(c *cli.Context, m *mqutil.Engine, deployed <-chan bool) gin.HandlerFunc {
+	v := setupMQ(c, m, deployed)
 	return func(c *gin.Context) {
 		mq.ToContext(c, v)
 		c.Next()
 	}
 }
 
-func setupMQ(c *cli.Context, m *mqutil.Engine, ready <-chan bool) mq.MQ {
+func setupMQ(c *cli.Context, m *mqutil.Engine, deployed <-chan bool) mq.MQ {
 	return mqstore.NewProducer(
 		c.String("url"),
 		c.String("nsq-producer"),
 		c.String("nsq-producer-http"),
 		c.StringSlice("nsq-lookupds"),
 		m,
-		ready,
+		deployed,
 	)
 }

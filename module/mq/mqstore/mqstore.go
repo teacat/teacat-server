@@ -34,7 +34,7 @@ type message struct {
 	body  []byte
 }
 
-func NewProducer(url, producer, prodHTTP string, lookupds []string, m *mqutil.Engine, ready <-chan bool) *mqstore {
+func NewProducer(url, producer, prodHTTP string, lookupds []string, m *mqutil.Engine, deployed <-chan bool) *mqstore {
 	// Ping the Event Store to make sure it's alive.
 	if err := pingMQ(prodHTTP); err != nil {
 		logrus.Fatalln(err)
@@ -54,7 +54,7 @@ func NewProducer(url, producer, prodHTTP string, lookupds []string, m *mqutil.En
 		isConnected: true,
 	}
 
-	go ms.capture(url, prodHTTP, lookupds, m, ready)
+	go ms.capture(url, prodHTTP, lookupds, m, deployed)
 
 	go ms.push(prodHTTP)
 
@@ -100,9 +100,9 @@ func createTopic(topic, httpProducer string) {
 	cmd.Wait()
 }
 
-func (mq *mqstore) capture(url string, prodHTTP string, lookupds []string, m *mqutil.Engine, ready <-chan bool) {
+func (mq *mqstore) capture(url string, prodHTTP string, lookupds []string, m *mqutil.Engine, deployed <-chan bool) {
 	// Continue if the router was ready.
-	<-ready
+	<-deployed
 
 	for _, v := range m.Listeners {
 		c, err := nsq.NewConsumer(v.Topic, v.Channel, nsq.NewConfig())

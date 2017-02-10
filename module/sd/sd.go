@@ -11,9 +11,9 @@ import (
 )
 
 // Wait waits until the events were all replayed, then create the client and register the service.
-func Wait(c *cli.Context, played <-chan bool) {
+func Wait(c *cli.Context, deployed <-chan bool) {
 	// Block until the events were all replayed.
-	<-played
+	<-deployed
 
 	logrus.Infoln("The events were all replayed, trying to register to the server registry.")
 

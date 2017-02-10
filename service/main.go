@@ -8,14 +8,14 @@ import (
 )
 
 func main() {
-	serverReady := make(chan bool)
+	started := make(chan bool)
 
 	app := cli.NewApp()
 	app.Name = "service"
 	app.Version = version.Version
 	app.Usage = "starts the service daemon."
 	app.Action = func(c *cli.Context) {
-		server(c, serverReady)
+		server(c, started)
 	}
 	app.Flags = serverFlags
 
