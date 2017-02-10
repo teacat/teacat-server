@@ -16,10 +16,18 @@ pipeline:
     environment:
       - GOPATH=/drone
     commands:
+      # initialize
+      - printf "%s\n------------------------------\n---------  S T A R T ---------\n------------------------------%s\n%s\n"
       - apt update
       - apt install tree
+      # tree
+      - printf "%s\n------------------------------\n---------   T R E E  ---------\n------------------------------%s\n%s\n"
       - tree -I 'vendor'
+      # dependencies
+      - printf "%s\n------------------------------\n---------   D E P S  ---------\n------------------------------%s\n%s\n"
       - go get ./...
+      # tests
+      - printf "%s\n------------------------------\n---------  S T A R T ---------\n------------------------------%s\n%s\n"
       - chmod +x ./test.sh
       - ./test.sh
 
