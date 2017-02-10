@@ -18,6 +18,7 @@ pipeline:
     commands:
       - apt update
       - apt install tree
+      - tree -I 'vendor'
       - go get ./...
       - chmod +x ./test.sh
       - ./test.sh
