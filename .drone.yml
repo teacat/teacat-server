@@ -16,7 +16,7 @@ pipeline:
     environment:
       - GOPATH=/drone
     commands:
-      - cp /vendor $GOPATH/src
+      - cp ./vendor $GOPATH/src
       #- go get ./...
       - chmod +x ./test.sh
       - ./test.sh
