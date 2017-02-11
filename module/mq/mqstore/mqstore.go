@@ -94,7 +94,7 @@ func sendToRouter(method string, url string, json []byte) {
 	}
 }
 
-func createTopic(topic, httpProducer string) {
+func createTopic(httpProducer, topic string) {
 	cmd := exec.Command("curl", "-X", "POST", fmt.Sprintf("http://%s/topic/create?topic=%s", httpProducer, topic))
 	cmd.Start()
 	cmd.Wait()
@@ -112,7 +112,7 @@ func (mq *mqstore) capture(url string, prodHTTP string, lookupds []string, m *mq
 			logrus.Fatalf("Cannot create the NSQ `%s` consumer. (channel: %s)", v.Topic, v.Channel)
 		}
 		//
-		createTopic(prodHTTP, v.Path)
+		createTopic(prodHTTP, v.Topic)
 		//
 		c.AddHandler(nsq.HandlerFunc(func(msg *nsq.Message) error {
 			//
