@@ -38,20 +38,17 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 	// Encrypt the user password.
-	if err := auth.Encrypt(&u.Password); err != nil {
+	if err := u.Encrypt(); err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+
 	// Insert the user to the database.
 	if err := store.CreateUser(c, &u); err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	//
-	//if err := mq.SendMail(c, &u); err != nil {
-	//	c.AbortWithError(http.StatusInternalServerError, err)
-	//	return
-	//}
 	go mq.SendMail(c, &u)
 
 	go event.UserCreated(c, &u)
@@ -116,7 +113,7 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 	// Encrypt the user password.
-	if err := auth.Encrypt(&u.Password); err != nil {
+	if err := u.Encrypt(); err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -159,7 +156,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": t})
+	c.JSON(http.StatusOK, model.Token{Token: t})
 }
 
 func WebSocket(c *gin.Context) {
