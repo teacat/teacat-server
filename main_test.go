@@ -7,20 +7,16 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/TeaMeow/KitSvc/client"
 	"github.com/TeaMeow/KitSvc/model"
+	"github.com/TeaMeow/KitSvc/shared/token"
 	"github.com/TeaMeow/KitSvc/version"
 	"github.com/codegangsta/cli"
 	"github.com/stretchr/testify/assert"
 )
 
-/*PostUser(*model.User) (*model.User, []error)
-GetUser(string) (*model.User, []error)
-PutUser(int, *model.User) (*model.User, []error)
-DeleteUser(int, *model.User) (*model.User, []error)
-PostAuth(*model.User) (string, []error)*/
-
 //
 var started = make(chan bool)
 var c = client.NewClient("http://127.0.0.1:8080")
+var ct client.Client
 
 func TestMain(t *testing.T) {
 	app := cli.NewApp()
@@ -54,25 +50,51 @@ func TestPostUser(t *testing.T) {
 	})
 	printErrors(errs)
 
-	assert.Equal(&model.User{
-		ID:       1,
-		Username: "admin",
-		Password: "testtest",
-	}, u, "They should be equal.")
+	err := u.Compare("testtest")
+	assert.True(err == nil)
 }
 
 func TestGetUser(t *testing.T) {
-	//assert := assert.New(t)
-}
+	assert := assert.New(t)
 
-func TestPutUser(t *testing.T) {
-	//assert := assert.New(t)
-}
+	u, errs := c.GetUser("admin")
+	printErrors(errs)
 
-func TestDeleteUser(t *testing.T) {
-	//assert := assert.New(t)
+	err := u.Compare("testtest")
+	assert.True(err == nil)
 }
 
 func TestPostAuth(t *testing.T) {
+	assert := assert.New(t)
+
+	tkn, errs := c.PostAuth(&model.User{
+		Username: "admin",
+		Password: "testtest",
+	})
+	printErrors(errs)
+
+	ctx, _ := token.Parse(tkn.Token, "4Rtg8BPKwixXy2ktDPxoMMAhRzmo9mmuZjvKONGPZZQSaJWNLijxR42qRgq0iBb5")
+	assert.Equal(&token.Content{
+		ID:       1,
+		Username: "admin",
+	}, ctx, "They should be equal.")
+
+	ct = client.NewClientToken("http://127.0.0.1:8080", tkn.Token)
+}
+
+func TestPutUser(t *testing.T) {
+	assert := assert.New(t)
+
+	u, errs := ct.PutUser(1, &model.User{
+		Username: "admin",
+		Password: "newpassword",
+	})
+	printErrors(errs)
+
+	err := u.Compare("newpassword")
+	assert.True(err == nil, "They should be match.")
+}
+
+func TestDeleteUser(t *testing.T) {
 	//assert := assert.New(t)
 }
