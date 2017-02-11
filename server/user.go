@@ -62,7 +62,7 @@ func GetUser(c *gin.Context) {
 	// Get the `username` from the url parameter.
 	username := c.Param("username")
 
-	// Get the user by the `username`` from the database.
+	// Get the user by the `username` from the database.
 	if u, err := store.GetUser(c, username); err != nil {
 		c.String(http.StatusNotFound, "The user was not found.")
 	} else {

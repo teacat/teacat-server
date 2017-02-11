@@ -42,7 +42,7 @@ func NewProducer(url, producer, prodHTTP string, lookupds []string, m *mqutil.En
 
 	config := nsq.NewConfig()
 	prod, err := nsq.NewProducer(producer, config)
-	prod.SetLogger(nil, nsq.LogLevelError)
+	//prod.SetLogger(nil, nsq.LogLevelError)
 	if err != nil {
 		logrus.Errorln(err)
 		logrus.Fatalln("Error occurred while creating the NSQ producer.")
@@ -106,7 +106,7 @@ func (mq *mqstore) capture(url string, prodHTTP string, lookupds []string, m *mq
 
 	for _, v := range m.Listeners {
 		c, err := nsq.NewConsumer(v.Topic, v.Channel, nsq.NewConfig())
-		c.SetLogger(nil, nsq.LogLevelError)
+		//c.SetLogger(nil, nsq.LogLevelError)
 		if err != nil {
 			logrus.Errorln(err)
 			logrus.Fatalf("Cannot create the NSQ `%s` consumer. (channel: %s)", v.Topic, v.Channel)
@@ -128,7 +128,6 @@ func (mq *mqstore) capture(url string, prodHTTP string, lookupds []string, m *mq
 			logrus.Fatalln("Cannot connect to the NSQ lookupds.")
 		}
 	}
-
 }
 
 func (mq *mqstore) push(prodHTTP string) {
