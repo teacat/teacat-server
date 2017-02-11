@@ -54,7 +54,6 @@ func Parse(tokenString string, secret string) (*Content, error) {
 }
 
 func ParseRequest(c *gin.Context) (*Content, error) {
-
 	// Get the jwt from the `Authorization` header.
 	header := c.Request.Header.Get("Authorization")
 
