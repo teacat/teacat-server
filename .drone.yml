@@ -14,6 +14,18 @@ pipeline:
       - chmod +x ./test.sh
       - ./test.sh
 
+  nsqd:
+    image: nsqio/nsq
+    detach: true
+    commands:
+      - /nsqd --lookupd-tcp-address=127.0.0.1:4160 --broadcast-address=127.0.0.1
+
+  nsqlookupd:
+    image: nsqio/nsq
+    detach: true
+    commands:
+      - /nsqlookupd
+
 #
 services:
   eventstore:
@@ -30,16 +42,6 @@ services:
 
   consul:
     image: consul
-
-  nsqd:
-    image: nsqio/nsq
-    commands:
-      - /nsqd --lookupd-tcp-address=127.0.0.1:4160 --broadcast-address=127.0.0.1
-
-  nsqlookupd:
-    image: nsqio/nsq
-    commands:
-      - /nsqlookupd
 
 #
 matrix:
