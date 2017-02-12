@@ -3,25 +3,14 @@ package sd
 import (
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/TeaMeow/KitSvc/version"
 	"github.com/codegangsta/cli"
 	"github.com/hashicorp/consul/api"
 	"github.com/satori/go.uuid"
 )
-
-// Wait waits until the events were all replayed, then create the client and register the service.
-func Wait(c *cli.Context, deployed <-chan bool) {
-	// Block until the events were all replayed.
-	<-deployed
-
-	logrus.Infoln("The events were all replayed, trying to register to the server registry.")
-
-	client := newClient(c)
-	register(c, client)
-
-	logrus.Infoln("The service has been registered to the server registry successfully, the service is now ready to work.")
-}
 
 // newClient creates a new Consul api client.
 func newClient(c *cli.Context) *api.Client {
@@ -35,17 +24,21 @@ func newClient(c *cli.Context) *api.Client {
 }
 
 // register register the service to the service registry.
-func register(c *cli.Context, client *api.Client) {
-
+func Register(c *cli.Context) {
+	//
+	client := newClient(c)
 	// Create a random id.
 	id := uuid.NewV4().String()
+	//
+	tags := c.StringSlice("consul-tags")
+	tags = append(tags, version.Version)
 
 	// The service information.
 	info := &api.AgentServiceRegistration{
 		ID:   id,
 		Name: c.String("name"),
 		Port: c.Int("port"),
-		Tags: c.StringSlice("consul-tags"),
+		Tags: tags,
 	}
 
 	// Register the service to the service registry.
@@ -55,7 +48,7 @@ func register(c *cli.Context, client *api.Client) {
 	}
 
 	//
-	logrus.Infof("The service id is `%s`.", id)
+	logrus.Infof("The service id is `%s` (%s).", id, strings.Join(tags, ", "))
 
 	// Register the health checks.
 	registerChecks(c, client, id)
