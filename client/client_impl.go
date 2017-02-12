@@ -3,6 +3,8 @@ package client
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"strconv"
 
 	"github.com/TeaMeow/KitSvc/model"
 	"github.com/parnurzeal/gorequest"
@@ -29,24 +31,6 @@ func NewClient(uri string) Client {
 // outbound requests with the given token.
 func NewClientToken(uri, token string) Client {
 	return &client{token: token, base: uri}
-}
-
-// handler handles the request error.
-func handler(resp gorequest.Response, b string, e []error, out interface{}) (errs []error) {
-	// Append the current errors to the error array.
-	errs = append(errs, e...)
-	// Unmarshal the JSON body to the struct if the response status code is lower than 300 (== OK).
-	if resp != nil && resp.StatusCode < 300 {
-		// If error occurred while processing the JSON body, append it to the error array.
-		if err := json.Unmarshal([]byte(b), &out); err != nil {
-			errs = append(errs, err)
-		}
-		return
-	}
-	// Append the response body to the error array
-	// if the response is not in the "OK range" (we assumed the response is the error message.).
-	errs = append(errs, errors.New(b))
-	return
 }
 
 // PostUser creates a new user account.
@@ -107,5 +91,38 @@ func (c *client) PostToken(in *model.User) (out *model.Token, errs []error) {
 		Send(in).
 		End()
 	errs = handler(resp, b, e, &out)
+	return
+}
+
+//
+// Helper functions
+//
+
+// uri combines the path.
+func uri(path string, params ...interface{}) string {
+	for i, v := range params {
+		switch v.(type) {
+		case int:
+			params[i] = strconv.Itoa(v.(int))
+		}
+	}
+	return fmt.Sprintf(path, params...)
+}
+
+// handler deals the response and the response error.
+func handler(resp gorequest.Response, b string, e []error, out interface{}) (errs []error) {
+	// Append the current errors to the error array.
+	errs = append(errs, e...)
+	// Unmarshal the JSON body to the struct if the response status code is lower than 300 (== OK).
+	if resp != nil && resp.StatusCode < 300 {
+		// If error occurred while processing the JSON body, append it to the error array.
+		if err := json.Unmarshal([]byte(b), &out); err != nil {
+			errs = append(errs, err)
+		}
+		return
+	}
+	// Append the response body to the error array
+	// if the response is not in the "OK range" (we assumed the response is the error message.).
+	errs = append(errs, errors.New(b))
 	return
 }

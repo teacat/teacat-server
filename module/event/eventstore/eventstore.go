@@ -32,7 +32,7 @@ type event struct {
 	meta   interface{}
 }
 
-// newClient creates a new event store client.
+// NewClient creates a new event store client.
 func NewClient(url string, esURL string, username string, password string, e *eventutil.Engine, replayed chan<- bool, deployed <-chan bool) *eventstore {
 	// Ping the Event Store to make sure it's alive.
 	if err := pingStore(esURL); err != nil {
@@ -51,7 +51,6 @@ func NewClient(url string, esURL string, username string, password string, e *ev
 		Client:      client,
 		isConnected: true,
 	}
-	//
 	AllConnected = true
 
 	// Capturing the events when the router was ready in the goroutine.
@@ -63,25 +62,22 @@ func NewClient(url string, esURL string, username string, password string, e *ev
 	return es
 }
 
-//
+// pingStore pings the eventstore with backoff to ensure
+// a connection can be established before we proceed with the
+// eventstore setup and migration.
 func pingStore(url string) error {
 	for i := 0; i < 30; i++ {
-		// Ping the Event Store by sending a GET request,
-		// and the response status code doesn't matter.
 		_, err := http.Get(url)
 		if err == nil {
 			return nil
 		}
-
-		// Waiting for another round if we didn't receive the response.
-		logrus.Infof("Cannot connect to Event Store, retry in 3 second.")
-		time.Sleep(time.Second * 3)
+		logrus.Infof("Cannot connect to Event Store, retry in 1 second.")
+		time.Sleep(time.Second)
 	}
-
 	return errors.New("Cannot connect to Event Store.")
 }
 
-// sendToRouter sends the received event data to self router.
+// sendToRouter sends the received event data to the self router.
 func sendToRouter(method string, url string, json []byte) {
 	// Send the request via the HTTP client.
 	resp, _, err := gorequest.
