@@ -51,11 +51,12 @@ var serverFlags = []cli.Flag{
 		Name:   "jwt-secret",
 		Usage:  "the secert used to encode the json web token.",
 	},
-	//cli.StringFlag{
-	//	EnvVar: "KITSVC_VERSION",
-	//	Name:   "version",
-	//	Usage:  "the version of the service.",
-	//},
+	cli.IntFlag{
+		EnvVar: "KITSVC_MAX_PING_COUNT",
+		Name:   "max-ping-count",
+		Usage:  "",
+		Value:  20,
+	},
 
 	// Database flags.
 	cli.StringFlag{
@@ -173,25 +174,27 @@ var serverFlags = []cli.Flag{
 	},
 }
 
+// server runs the server.
 func server(c *cli.Context, started chan bool) error {
+	// `deployed` will be closed when the router is deployed.
+	// `replayed` will be closed after the events are all replayed.
 	deployed := make(chan bool)
 	replayed := make(chan bool)
 
 	// Create the Gin engine.
 	gin := gin.New()
-	// Create the event handler struct.
+	// Event handlers.
 	event := eventutil.New(gin)
-	//
+	// Websocket handlers.
 	ws := wsutil.New(gin)
-	//
+	// Message queue handlers.
 	mq := mqutil.New(gin)
 
 	// Routes.
 	router.Load(
-		gin,
-		event,
-		ws,
-		mq,
+		// Cores.
+		gin, event, ws, mq,
+		// Middlwares.
 		middleware.Config(c),
 		middleware.Store(c),
 		middleware.Logging(),
@@ -200,22 +203,23 @@ func server(c *cli.Context, started chan bool) error {
 		middleware.Metrics(),
 	)
 
-	// And register the service to the service registry when the events were replayed in the goroutine.
+	// Register to the service registry when the events were replayed.
 	go func() {
-		sd.Wait(c, replayed)
+		<-replayed
+
+		sd.Register(c)
+		// After the service is registered to the consul,
+		// close the `started` channel to make it non-blocking.
 		close(started)
 	}()
 
-	// We only do those things when the router is ready to use.
+	// Ping the server to make sure the router is working.
 	go func() {
-		// To check the router is good to go,
-		// we ping the server by sending the GET request to the router.
 		if err := pingServer(c); err != nil {
 			logrus.Fatalln("The router has no response, or it might took too long to start up.")
 		}
-
 		logrus.Infoln("The router has been deployed successfully.")
-		// Send `true` to the `isReady` channel if the router is ready to use.
+		// Close the `deployed` channel to make it non-blocking.
 		close(deployed)
 	}()
 
@@ -223,20 +227,18 @@ func server(c *cli.Context, started chan bool) error {
 	return http.ListenAndServe(c.String("addr"), gin)
 }
 
-// pingServer pings the http server to make sure the router is currently working.
+// pingServer pings the http server to make sure the router is working.
 func pingServer(c *cli.Context) error {
-	for i := 0; i < 30; i++ {
-
+	for i := 0; i < c.Int("max-ping-count"); i++ {
 		// Ping the server by sending a GET request to `/health`.
 		resp, err := http.Get(c.String("url") + "/sd/health")
 		if err == nil && resp.StatusCode == 200 {
 			return nil
 		}
 
-		// Waiting for another round if we didn't receive the 200 status code by the ping request.
+		// Sleep for a second to continue the next ping.
 		logrus.Infof("Waiting for the router, retry in 1 second.")
 		time.Sleep(time.Second)
 	}
-
 	return errors.New("Cannot connect to the router.")
 }

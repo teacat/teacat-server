@@ -6,6 +6,7 @@ export KITSVC_ADDR="127.0.0.1:8080"
 export KITSVC_PORT=8080
 export KITSVC_USAGE="Operations about the string."
 export KITSVC_JWT_SECRET="4Rtg8BPKwixXy2ktDPxoMMAhRzmo9mmuZjvKONGPZZQSaJWNLijxR42qRgq0iBb5"
+export KITSVC_MAX_PING_COUNT=20
 
 export KITSVC_DATABASE_NAME="service"
 export KITSVC_DATABASE_HOST="127.0.0.1:3306"
