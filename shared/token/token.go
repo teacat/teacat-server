@@ -12,14 +12,17 @@ import (
 )
 
 var (
+	// ErrMissingHeader means the `Authorization` header was empty.
 	ErrMissingHeader = errors.New("The length of the `Authorization` header is zero.")
 )
 
-type Content struct {
+// Context is the context of the JSON web token.
+type Context struct {
 	ID       int
 	Username string
 }
 
+// secretFunc validates the secret format.
 func secretFunc(secret string) jwt.Keyfunc {
 	return func(token *jwt.Token) (interface{}, error) {
 		// Make sure the `alg` is what we except.
@@ -31,30 +34,33 @@ func secretFunc(secret string) jwt.Keyfunc {
 	}
 }
 
-func Parse(tokenString string, secret string) (*Content, error) {
-	content := &Content{}
+// Parse validates the token with the specified secret,
+// and returns the context if the token was valid.
+func Parse(tokenString string, secret string) (*Context, error) {
+	ctx := &Context{}
 
 	// Parse the token.
 	token, err := jwt.Parse(tokenString, secretFunc(secret))
 
 	// Parse error.
 	if err != nil {
-		return content, err
+		return ctx, err
 
 		// Read the token if it's valid.
 	} else if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		content.ID = int(claims["id"].(float64))
-		content.Username = claims["username"].(string)
-		return content, nil
+		ctx.ID = int(claims["id"].(float64))
+		ctx.Username = claims["username"].(string)
+		return ctx, nil
 
 		// Other errors.
 	} else {
-		return content, err
+		return ctx, err
 	}
 }
 
-func ParseRequest(c *gin.Context) (*Content, error) {
-	// Get the jwt from the `Authorization` header.
+// ParseRequest gets the token from the header and
+// pass it to the Parse function to parses the token.
+func ParseRequest(c *gin.Context) (*Context, error) {
 	header := c.Request.Header.Get("Authorization")
 
 	// Load the jwt secret from the gin config
@@ -62,7 +68,7 @@ func ParseRequest(c *gin.Context) (*Content, error) {
 	secret := config.(*model.Config).JWTSecret
 
 	if len(header) == 0 {
-		return &Content{}, ErrMissingHeader
+		return &Context{}, ErrMissingHeader
 	}
 
 	var t string
@@ -71,22 +77,21 @@ func ParseRequest(c *gin.Context) (*Content, error) {
 	return Parse(t, secret)
 }
 
-func Sign(ctx *gin.Context, c Content, secret string) (tokenString string, err error) {
-
+// Sign signs the context with the specified secret.
+func Sign(ctx *gin.Context, c Context, secret string) (tokenString string, err error) {
 	// Load the jwt secret from the Gin config if the secret isn't specified.
 	if secret == "" {
 		config, _ := ctx.Get(middleware.ConfigKey)
 		secret = config.(*model.Config).JWTSecret
 	}
-
+	// The token content.
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":       c.ID,
 		"username": c.Username,
 		"nbf":      time.Now().Unix(),
 		"iat":      time.Now().Unix(),
 	})
-
-	// Sign and get the complete encoded token as a string using the secret.
+	// Sign the token with the specified secret.
 	tokenString, err = token.SignedString([]byte(secret))
 
 	return

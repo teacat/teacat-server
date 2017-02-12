@@ -17,7 +17,6 @@ pipeline:
       - GOPATH=/drone
     commands:
       - mv vendor $GOPATH/src
-      #- go get ./...
       - chmod +x ./test.sh
       - ./test.sh
 #

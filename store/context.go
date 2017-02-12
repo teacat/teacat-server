@@ -4,6 +4,7 @@ import (
 	"golang.org/x/net/context"
 )
 
+// Key is the key name that will be used in the Gin context.
 const Key = "store"
 
 // Setter defines a context that enables setting values.
