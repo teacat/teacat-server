@@ -7,6 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Store is a middleware function that initializes the datastore and attaches to
+// the context of every request context.
 func Store(cli *cli.Context) gin.HandlerFunc {
 	v := setupStore(cli)
 	return func(c *gin.Context) {
@@ -15,6 +17,7 @@ func Store(cli *cli.Context) gin.HandlerFunc {
 	}
 }
 
+// setupStore is the helper function to create the datastore from the CLI context.
 func setupStore(c *cli.Context) store.Store {
 	return datastore.Open(
 		c.String("database-user"),

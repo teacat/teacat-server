@@ -8,6 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// MQ is a middleware function that initializes the message queue and attaches to
+// the context of every request context.
 func MQ(c *cli.Context, m *mqutil.Engine, deployed <-chan bool) gin.HandlerFunc {
 	v := setupMQ(c, m, deployed)
 	return func(c *gin.Context) {
@@ -16,6 +18,7 @@ func MQ(c *cli.Context, m *mqutil.Engine, deployed <-chan bool) gin.HandlerFunc 
 	}
 }
 
+// setupMQ is the helper function to create the message queue from the CLI context.
 func setupMQ(c *cli.Context, m *mqutil.Engine, deployed <-chan bool) mq.MQ {
 	return mqstore.NewProducer(
 		c.String("url"),

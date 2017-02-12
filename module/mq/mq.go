@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// MQ wraps the functions that interactive with the message queue.
 type MQ interface {
 	SendMail(*model.User) error
 }

@@ -100,13 +100,34 @@ func createTopic(httpProducer, topic string) {
 	cmd.Wait()
 }
 
+type logger struct {
+}
+
+func (l *logger) Output(calldepth int, s string) error {
+	logger := logrus.StandardLogger()
+	typ := s[0:3]
+	switch typ {
+	case "DBG":
+		logger.Debug(s[9:len(s)])
+	case "INF":
+		logger.Info(s[9:len(s)])
+	case "WRN":
+		logger.Warn(s[9:len(s)])
+	case "ERR":
+		logger.Error(s[9:len(s)])
+	}
+
+	return nil
+}
+
 func (mq *mqstore) capture(url string, prodHTTP string, lookupds []string, m *mqutil.Engine, deployed <-chan bool) {
 	// Continue if the router was ready.
 	<-deployed
 
 	for _, v := range m.Listeners {
 		c, err := nsq.NewConsumer(v.Topic, v.Channel, nsq.NewConfig())
-		//c.SetLogger(nil, nsq.LogLevelError)
+		l := &logger{}
+		c.SetLogger(l, nsq.LogLevelDebug)
 		if err != nil {
 			logrus.Errorln(err)
 			logrus.Fatalf("Cannot create the NSQ `%s` consumer. (channel: %s)", v.Topic, v.Channel)

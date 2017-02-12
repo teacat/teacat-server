@@ -23,13 +23,12 @@ func newClient(c *cli.Context) *api.Client {
 	return apiClient
 }
 
-// register register the service to the service registry.
+// Register the service to the service registry.
 func Register(c *cli.Context) {
-	//
 	client := newClient(c)
 	// Create a random id.
 	id := uuid.NewV4().String()
-	//
+	// Append the service version in the consul tags.
 	tags := c.StringSlice("consul-tags")
 	tags = append(tags, version.Version)
 
@@ -41,16 +40,13 @@ func Register(c *cli.Context) {
 		Tags: tags,
 	}
 
-	// Register the service to the service registry.
 	if err := client.Agent().ServiceRegister(info); err != nil {
 		logrus.Errorln(err)
 		logrus.Fatalln("Error occurred while registering to the service registry (Is consul running?).")
 	}
-
-	//
 	logrus.Infof("The service id is `%s` (%s).", id, strings.Join(tags, ", "))
 
-	// Register the health checks.
+	// Register the health check handlers.
 	registerChecks(c, client, id)
 
 	// Deregister the service when exiting the program.
@@ -100,7 +96,6 @@ func registerChecks(c *cli.Context, client *api.Client, id string) {
 			},
 		},
 	}
-
 	for _, v := range checks {
 		client.Agent().CheckRegister(v)
 	}

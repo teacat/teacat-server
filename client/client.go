@@ -12,7 +12,7 @@ type Client interface {
 	GetUser(string) (*model.User, []error)
 	PutUser(int, *model.User) (*model.User, []error)
 	DeleteUser(int, *model.User) (*model.User, []error)
-	PostAuth(*model.User) (*model.Token, []error)
+	PostToken(*model.User) (*model.Token, []error)
 }
 
 func uri(path string, params ...interface{}) string {

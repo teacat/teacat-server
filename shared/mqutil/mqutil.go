@@ -23,7 +23,7 @@ func New(e *gin.Engine) *Engine {
 	return &Engine{Gin: e}
 }
 
-// Capture subscribed to a channel and capturing the incoming messages with the specified topic.
+// Capture subscribes to a channel and capturing the incoming messages with the specified topic.
 func (e *Engine) Capture(channel, topic string, handler gin.HandlerFunc) {
 	e.Gin.POST("/mq/"+topic, handler)
 	e.Listeners = append(e.Listeners, Listener{

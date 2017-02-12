@@ -1,22 +1,24 @@
 package middleware
 
 import (
-	"github.com/TeaMeow/KitSvc/model"
 	"github.com/codegangsta/cli"
 	"github.com/gin-gonic/gin"
 )
 
-const ConfigKey = "config"
+// configKey is the key name of the config context in the Gin context.
+const configKey = "config"
 
+// Config is a middleware function that initializes the config and attaches to
+// the context of every request context.
 func Config(cli *cli.Context) gin.HandlerFunc {
-	v := setupConfig(cli)
 	return func(c *gin.Context) {
-		c.Set(ConfigKey, v)
+		c.Set(configKey, cli)
 	}
 }
 
-func setupConfig(c *cli.Context) *model.Config {
-	return &model.Config{
-		JWTSecret: c.String("jwt-secret"),
-	}
+// ConfigContext returns the CLI context associated with this context.
+func ConfigContext(c *gin.Context) (ctx *cli.Context) {
+	conf, _ := c.Get(configKey)
+	ctx = conf.(*cli.Context)
+	return
 }

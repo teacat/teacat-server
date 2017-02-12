@@ -13,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-//
+// Load loads the middlewares, routes, handlers.
 func Load(g *gin.Engine, e *eventutil.Engine, w *wsutil.Engine, m *mqutil.Engine, mw ...gin.HandlerFunc) *gin.Engine {
 	// Middlewares.
 	g.Use(gin.LoggerWithWriter(os.Stdout, "/metrics", "/sd/health", "/sd/ram", "/sd/cpu", "/sd/disk"))
@@ -23,31 +23,37 @@ func Load(g *gin.Engine, e *eventutil.Engine, w *wsutil.Engine, m *mqutil.Engine
 	g.Use(header.Secure)
 	g.Use(mw...)
 
-	//TODO: CIRCU BREAKER
-
 	// The common handlers.
-	g.POST("/user", server.CreateUser)
-	g.GET("/user/:username", server.GetUser)
-	g.DELETE("/user/:id", server.DeleteUser)
-	g.PUT("/user/:id", server.UpdateUser)
-	g.POST("/auth", server.Login)
+	user := g.Group("/user")
+	{
+		user.POST("", server.CreateUser)
+		user.GET("/:username", server.GetUser)
+		user.DELETE("/:id", server.DeleteUser)
+		user.PUT("/:id", server.UpdateUser)
+		user.POST("/token", server.PostToken)
+	}
 
 	// The health check handlers
 	// for the service discovery.
-	g.GET("/sd/health", sd.HealthCheck)
-	g.GET("/sd/disk", sd.DiskCheck)
-	g.GET("/sd/cpu", sd.CPUCheck)
-	g.GET("/sd/ram", sd.RAMCheck)
+	svcd := g.Group("/sd")
+	{
+		svcd.GET("/health", sd.HealthCheck)
+		svcd.GET("/disk", sd.DiskCheck)
+		svcd.GET("/cpu", sd.CPUCheck)
+		svcd.GET("/ram", sd.RAMCheck)
+	}
+
+	// Prometheus metrics handler.
 	g.GET("/metrics", metrics.PrometheusHandler())
 
-	// Websockets.
-	w.Handle("/websocket", server.WebSocket)
+	// WebSockets.
+	w.Handle("/", server.WatchUser)
 
-	// Message
+	// Message handlers.
 	m.Capture("user", "send_mail", server.SendMail)
 
-	// The event handlers.
-	e.Capture("user.created", server.Created)
+	// Event handlers.
+	e.Capture("user_created", server.UserCreated)
 
 	return g
 }

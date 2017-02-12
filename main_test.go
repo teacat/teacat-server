@@ -64,17 +64,17 @@ func TestGetUser(t *testing.T) {
 	assert.True(err == nil)
 }
 
-func TestPostAuth(t *testing.T) {
+func TestPostToken(t *testing.T) {
 	assert := assert.New(t)
 
-	tkn, errs := c.PostAuth(&model.User{
+	tkn, errs := c.PostToken(&model.User{
 		Username: "admin",
 		Password: "testtest",
 	})
 	printErrors(errs)
 
 	ctx, _ := token.Parse(tkn.Token, "4Rtg8BPKwixXy2ktDPxoMMAhRzmo9mmuZjvKONGPZZQSaJWNLijxR42qRgq0iBb5")
-	assert.Equal(&token.Content{
+	assert.Equal(&token.Context{
 		ID:       1,
 		Username: "admin",
 	}, ctx, "They should be equal.")

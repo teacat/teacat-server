@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/TeaMeow/KitSvc/model"
 	"github.com/TeaMeow/KitSvc/router/middleware"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -64,8 +63,8 @@ func ParseRequest(c *gin.Context) (*Context, error) {
 	header := c.Request.Header.Get("Authorization")
 
 	// Load the jwt secret from the gin config
-	config, _ := c.Get(middleware.ConfigKey)
-	secret := config.(*model.Config).JWTSecret
+	config := middleware.ConfigContext(c)
+	secret := config.String("jwt-secret")
 
 	if len(header) == 0 {
 		return &Context{}, ErrMissingHeader
@@ -81,8 +80,8 @@ func ParseRequest(c *gin.Context) (*Context, error) {
 func Sign(ctx *gin.Context, c Context, secret string) (tokenString string, err error) {
 	// Load the jwt secret from the Gin config if the secret isn't specified.
 	if secret == "" {
-		config, _ := ctx.Get(middleware.ConfigKey)
-		secret = config.(*model.Config).JWTSecret
+		config := middleware.ConfigContext(ctx)
+		secret = config.String("jwt-secret")
 	}
 	// The token content.
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{

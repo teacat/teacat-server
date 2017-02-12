@@ -9,22 +9,13 @@ import (
 	"github.com/TeaMeow/KitSvc/module/mq"
 	"github.com/TeaMeow/KitSvc/shared/auth"
 	"github.com/TeaMeow/KitSvc/shared/token"
+	"github.com/TeaMeow/KitSvc/shared/wsutil"
 	"github.com/TeaMeow/KitSvc/store"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	"github.com/olahol/melody"
 )
 
-func Created(c *gin.Context) {
-	var u model.User
-	if err := c.Bind(&u); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
-		return
-	}
-	//fmt.Println(u)
-}
-
-//
+// CreateUser creates a new user account.
 func CreateUser(c *gin.Context) {
 	var u model.User
 
@@ -57,7 +48,7 @@ func CreateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, u)
 }
 
-//
+// GetUser gets an user by the user identifier.
 func GetUser(c *gin.Context) {
 	// Get the `username` from the url parameter.
 	username := c.Param("username")
@@ -70,7 +61,7 @@ func GetUser(c *gin.Context) {
 	}
 }
 
-//
+// DeleteUser deletes the user by the user identifier.
 func DeleteUser(c *gin.Context) {
 	// Get the user id from the url parameter.
 	userID, _ := strconv.Atoi(c.Param("id"))
@@ -87,7 +78,7 @@ func DeleteUser(c *gin.Context) {
 	c.String(http.StatusOK, "The user has been deleted successfully.")
 }
 
-//
+// UpdateUser updates an user account information.
 func UpdateUser(c *gin.Context) {
 	// Get the user id from the url parameter.
 	userID, _ := strconv.Atoi(c.Param("id"))
@@ -130,8 +121,9 @@ func UpdateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, u)
 }
 
-//
-func Login(c *gin.Context) {
+// PostToken generates the authentication token
+// if the password was matched with the specified account.
+func PostToken(c *gin.Context) {
 	// Binding the data with the user struct.
 	var u model.User
 	if err := c.Bind(&u); err != nil {
@@ -150,7 +142,7 @@ func Login(c *gin.Context) {
 		return
 	}
 	// Sign the json web token.
-	t, err := token.Sign(c, token.Content{ID: d.ID, Username: d.Username}, "")
+	t, err := token.Sign(c, token.Context{ID: d.ID, Username: d.Username}, "")
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
@@ -159,13 +151,23 @@ func Login(c *gin.Context) {
 	c.JSON(http.StatusOK, model.Token{Token: t})
 }
 
-func WebSocket(c *gin.Context) {
-	w, _ := c.Get("websocket")
-	ws := w.(melody.Melody)
+// WatchUser watches the user changes, and broadcast when there's a new user.
+func WatchUser(c *gin.Context) {
+	ws := wsutil.Get(c)
 
 	ws.Broadcast([]byte("Wow"))
 }
 
+// SendMail sends the mail to the new user's inbox.
 func SendMail(c *gin.Context) {
+	// Blah, blah blah ...
+}
 
+// UserCreated handles the `user-created` event.
+func UserCreated(c *gin.Context) {
+	var u model.User
+	if err := c.Bind(&u); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
 }
