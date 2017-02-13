@@ -16,7 +16,7 @@ pipeline:
     environment:
       - GOPATH=/drone
     commands:
-      - make dep test
+      - make deps test
       #- make test_mysql
 #
 services:

@@ -6,8 +6,8 @@ deps:
 test:
 	go test ./server
 
-# build the release files
-build: build_static
+test_mysql:
+
 
 run:
 	go build -o ./bin/main ./server
