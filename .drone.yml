@@ -16,9 +16,8 @@ pipeline:
     environment:
       - GOPATH=/drone
     commands:
-      - mv vendor $GOPATH/src
-      - chmod +x ./test.sh
-      - ./test.sh
+      - make dep test
+      #- make test_mysql
 #
 services:
   eventstore:
@@ -39,5 +38,7 @@ services:
 #
 matrix:
   GO_VERSION:
+    - 1.8
     - 1.7
     - 1.6
+    - 1.5
