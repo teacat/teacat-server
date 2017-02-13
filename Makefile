@@ -1,7 +1,7 @@
 .PHONY: build
 
 deps:
-	cp -R vendor $GOPATH/src
+	cp -R vendor $(GOPATH)/src
 
 test:
 	go test ./server
