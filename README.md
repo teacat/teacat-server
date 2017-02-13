@@ -9,7 +9,7 @@
 - 具獨立性的微服務架構
 - 透過 Gorm 與資料庫連線
 - Consul、Prometheus、NSQ、EventStore
-- 以 Melody 作為支援 [WebSocket](https://github.com/olahol/melody) 的框架
+- 以 [Melody](https://github.com/olahol/melody) 作為支援 WebSocket 的框架
 - 內建預設範例（亦有 WebSocket、NSQ 與 EventStore 和 [JSON Web Token](jwt.io) 的使用方式）
 
 ## 主要結構

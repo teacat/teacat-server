@@ -6,7 +6,7 @@ import (
 	"github.com/TeaMeow/KitSvc/module/metrics"
 	"github.com/TeaMeow/KitSvc/module/sd"
 	"github.com/TeaMeow/KitSvc/router/middleware/header"
-	"github.com/TeaMeow/KitSvc/server"
+	"github.com/TeaMeow/KitSvc/service"
 	"github.com/TeaMeow/KitSvc/shared/eventutil"
 	"github.com/TeaMeow/KitSvc/shared/mqutil"
 	"github.com/TeaMeow/KitSvc/shared/wsutil"
@@ -26,11 +26,11 @@ func Load(g *gin.Engine, e *eventutil.Engine, w *wsutil.Engine, m *mqutil.Engine
 	// The common handlers.
 	user := g.Group("/user")
 	{
-		user.POST("", server.CreateUser)
-		user.GET("/:username", server.GetUser)
-		user.DELETE("/:id", server.DeleteUser)
-		user.PUT("/:id", server.UpdateUser)
-		user.POST("/token", server.PostToken)
+		user.POST("", service.CreateUser)
+		user.GET("/:username", service.GetUser)
+		user.DELETE("/:id", service.DeleteUser)
+		user.PUT("/:id", service.UpdateUser)
+		user.POST("/token", service.PostToken)
 	}
 
 	// The health check handlers
@@ -47,13 +47,13 @@ func Load(g *gin.Engine, e *eventutil.Engine, w *wsutil.Engine, m *mqutil.Engine
 	g.GET("/metrics", metrics.PrometheusHandler())
 
 	// WebSockets.
-	w.Handle("/", server.WatchUser)
+	w.Handle("/", service.WatchUser)
 
 	// Message handlers.
-	m.Capture("user", "send_mail", server.SendMail)
+	m.Capture("user", "send_mail", service.SendMail)
 
 	// Event handlers.
-	e.Capture("user_created", server.UserCreated)
+	e.Capture("user_created", service.UserCreated)
 
 	return g
 }

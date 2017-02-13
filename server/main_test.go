@@ -29,7 +29,6 @@ func TestMain(t *testing.T) {
 	app.Flags = serverFlags
 
 	go app.Run(os.Args)
-
 	<-started
 }
 

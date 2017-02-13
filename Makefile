@@ -1,0 +1,41 @@
+.PHONY: build
+
+deps:
+	cp -R vendor $GOPATH/src
+
+test:
+	go test ./server
+
+# build the release files
+build: build_static
+
+run:
+	go build -o ./bin/main ./server
+	./bin/main
+
+#	KITSVC_NAME="User"	\
+	KITSVC_URL="http://127.0.0.1:8080"	\
+	KITSVC_ADDR="127.0.0.1:8080"	\
+	KITSVC_PORT=8080	\
+	KITSVC_USAGE="Operations about the users."	\
+	KITSVC_JWT_SECRET="4Rtg8BPKwixXy2ktDPxoMMAhRzmo9mmuZjvKONGPZZQSaJWNLijxR42qRgq0iBb5"	\
+	KITSVC_MAX_PING_COUNT=20	\
+	GIN_MODE=release	\
+	KITSVC_DATABASE_NAME="service"	\
+	KITSVC_DATABASE_HOST="127.0.0.1:3306"	\
+	KITSVC_DATABASE_USER="root"	\
+	KITSVC_DATABASE_PASSWORD="root"	\
+	KITSVC_DATABASE_CHARSET="utf8"	\
+	KITSVC_DATABASE_LOC="Local"	\
+	KITSVC_DATABASE_PARSE_TIME="True"	\
+	KITSVC_NSQ_PRODUCER="127.0.0.1:4150"	\
+	KITSVC_NSQ_PRODUCER_HTTP="127.0.0.1:4151"	\
+	KITSVC_NSQ_LOOKUPDS="127.0.0.1:4161"	\
+	KITSVC_ES_SERVER_URL="http://127.0.0.1:2113"	\
+	KITSVC_ES_USERNAME="admin"	\
+	KITSVC_ES_PASSWORD="changeit"	\
+	KITSVC_PROMETHEUS_NAMESPACE="service"	\
+	KITSVC_PROMETHEUS_NAMESPACE="user"	\
+	KITSVC_CONSUL_CHECK_INTERVAL="30s"	\
+	KITSVC_CONSUL_CHECK_TIMEOUT="1s"	\
+	KITSVC_CONSUL_TAGS="user,micro"	\

@@ -22,6 +22,7 @@ var serverFlags = []cli.Flag{
 		EnvVar: "KITSVC_NAME",
 		Name:   "name",
 		Usage:  "the name of the service, exposed for service discovery.",
+		Value:  "Service",
 	},
 	cli.StringFlag{
 		EnvVar: "KITSVC_URL",
@@ -45,11 +46,13 @@ var serverFlags = []cli.Flag{
 		EnvVar: "KITSVC_USAGE",
 		Name:   "usage",
 		Usage:  "the usage of the service, exposed for service discovery.",
+		Value:  "Operations about the users.",
 	},
 	cli.StringFlag{
 		EnvVar: "KITSVC_JWT_SECRET",
 		Name:   "jwt-secret",
 		Usage:  "the secert used to encode the json web token.",
+		Value:  "4Rtg8BPKwixXy2ktDPxoMMAhRzmo9mmuZjvKONGPZZQSaJWNLijxR42qRgq0iBb5",
 	},
 	cli.IntFlag{
 		EnvVar: "KITSVC_MAX_PING_COUNT",
@@ -75,11 +78,13 @@ var serverFlags = []cli.Flag{
 		EnvVar: "KITSVC_DATABASE_USER",
 		Name:   "database-user",
 		Usage:  "the user of the database.",
+		Value:  "root",
 	},
 	cli.StringFlag{
 		EnvVar: "KITSVC_DATABASE_PASSWORD",
 		Name:   "database-password",
 		Usage:  "the password of the database.",
+		Value:  "root",
 	},
 	cli.StringFlag{
 		EnvVar: "KITSVC_DATABASE_CHARSET",
@@ -132,11 +137,13 @@ var serverFlags = []cli.Flag{
 		EnvVar: "KITSVC_ES_USERNAME",
 		Name:   "es-username",
 		Usage:  "the username of the event store.",
+		Value:  "admin",
 	},
 	cli.StringFlag{
 		EnvVar: "KITSVC_ES_PASSWORD",
 		Name:   "es-password",
 		Usage:  "the password of the event store.",
+		Value:  "changeit",
 	},
 
 	// Prometheus flags.
@@ -144,11 +151,13 @@ var serverFlags = []cli.Flag{
 		EnvVar: "KITSVC_PROMETHEUS_NAMESPACE",
 		Name:   "prometheus-namespace",
 		Usage:  "the prometheus namespace.",
+		Value:  "service",
 	},
 	cli.StringFlag{
 		EnvVar: "KITSVC_PROMETHEUS_SUBSYSTEM",
 		Name:   "prometheus-subsystem",
 		Usage:  "the subsystem of the promethues.",
+		Value:  "user",
 	},
 
 	// Consul flags.
@@ -156,7 +165,7 @@ var serverFlags = []cli.Flag{
 		EnvVar: "KITSVC_CONSUL_CHECK_INTERVAL",
 		Name:   "consul-check_interval",
 		Usage:  "the interval of consul health check.",
-		Value:  "10s",
+		Value:  "30s",
 	},
 	cli.StringFlag{
 		EnvVar: "KITSVC_CONSUL_CHECK_TIMEOUT",
@@ -169,6 +178,7 @@ var serverFlags = []cli.Flag{
 		Name:   "consul-tags",
 		Usage:  "the service tags for consul.",
 		Value: &cli.StringSlice{
+			"user",
 			"micro",
 		},
 	},
