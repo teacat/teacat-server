@@ -19,11 +19,12 @@ pipeline:
       - make deps test
       # - make test_mysql
 
-  slack:
-    image: plugins/slack
-    webhook_url: ${SLACK_TOKEN}
-    channel: builds
-    username: drone
+  #slack:
+  #  image: plugins/slack
+  #  webhook_url: ${SLACK_TOKEN}
+  #  channel: builds
+  #  username: drone
+
 #
 services:
   eventstore:
@@ -47,4 +48,3 @@ matrix:
     - 1.8
     - 1.7
     - 1.6
-    - 1.5
