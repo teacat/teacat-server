@@ -18,6 +18,12 @@ pipeline:
     commands:
       - make deps test
       #- make test_mysql
+
+  notify:
+    slack:
+      webhook_url: ${SLACK_TOKEN}
+      channel: builds
+      username: drone
 #
 services:
   eventstore:
