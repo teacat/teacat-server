@@ -17,7 +17,7 @@ pipeline:
       - GOPATH=/drone
     commands:
       - make deps test
-      #- make test_mysql
+      # - make test_mysql
 
   notify:
     slack:
