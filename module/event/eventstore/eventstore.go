@@ -8,16 +8,21 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/TeaMeow/KitSvc/module/log"
 	"github.com/TeaMeow/KitSvc/shared/eventutil"
 	"github.com/jetbasrawi/go.geteventstore"
 	"github.com/parnurzeal/gorequest"
 )
 
 var (
+	// AllConnected returns true when the event stores were all connected.
 	AllConnected = false
-	SentTotal    = 0
-	RecvTotal    = 0
-	QueueTotal   = 0
+	// SentTotal returns the total of the sent event.
+	SentTotal = 0
+	// RecvTotal returns the total of the received event.
+	RecvTotal = 0
+	// QueueTotal returns the total of the event are still in the queue.
+	QueueTotal = 0
 )
 
 type eventstore struct {
@@ -26,6 +31,7 @@ type eventstore struct {
 	queue       []event
 }
 
+// event represents an event data.
 type event struct {
 	stream string
 	data   interface{}
@@ -41,10 +47,11 @@ func NewClient(url string, esURL string, username string, password string, e *ev
 	// Create the client to Event Store.
 	client, err := goes.NewClient(nil, esURL)
 	if err != nil {
-		logrus.Errorln(err)
-		logrus.Fatalln("Cannot create the client of Event Store.")
+		log.Logger.WithFields(logrus.Fields{
+			"err":    err,
+			"remote": esURL,
+		}).Fatal("Cannot create the client for Event Store.")
 	}
-	// Set the username, password
 	client.SetBasicAuth(username, password)
 
 	es := &eventstore{
@@ -55,8 +62,7 @@ func NewClient(url string, esURL string, username string, password string, e *ev
 
 	// Capturing the events when the router was ready in the goroutine.
 	go es.capture(url, e, replayed, deployed)
-
-	// Pushing the events in the local queue to Event Store.
+	// Pushing the events which are in the local queue to Event Store.
 	go es.push(esURL)
 
 	return es
@@ -71,7 +77,7 @@ func pingStore(url string) error {
 		if err == nil {
 			return nil
 		}
-		logrus.Infof("Cannot connect to Event Store, retry in 1 second.")
+		log.Logger.Info("Cannot connect to Event Store, retry in 1 second.")
 		time.Sleep(time.Second)
 	}
 	return errors.New("Cannot connect to Event Store.")
@@ -86,12 +92,20 @@ func sendToRouter(method string, url string, json []byte) {
 		Send(string(json)).
 		End()
 	if err != nil {
-		// DO NOT FATA DIE
-		logrus.Errorln(err)
-		logrus.Fatalln("Error occurred while sending the event to self router.")
+		log.Logger.WithFields(logrus.Fields{
+			"err":    err,
+			"method": method,
+			"url":    url,
+			"body":   json,
+		}).Error("Error occurred while sending the event to self router.")
 	}
 	if resp.StatusCode != 200 {
-		logrus.Infoln("The event has been recevied by the router, but the status code wasn't 200.")
+		log.Logger.WithFields(logrus.Fields{
+			"status": resp.StatusCode,
+			"method": method,
+			"url":    url,
+			"body":   json,
+		}).Info("The event has been recevied by the router, but the status code wasn't 200.")
 	}
 }
 
@@ -100,9 +114,8 @@ func isEmptyEvent(json []byte) bool {
 	return string(json) == "{}"
 }
 
-//
-func (es *eventstore) capture(localUrl string, e *eventutil.Engine, replayed chan<- bool, deployed <-chan bool) {
-	//
+// capture the incoming events.
+func (es *eventstore) capture(localURL string, e *eventutil.Engine, replayed chan<- bool, deployed <-chan bool) {
 	<-deployed
 
 	playedStreams := 0
@@ -129,21 +142,20 @@ func (es *eventstore) capture(localUrl string, e *eventutil.Engine, replayed cha
 						// We've replayed all the events in the stream since there're no more events can read,
 						// so we mark the stream as `replayed`, we'll continue to the next step once all the streams were replayed.
 						if !replayedStream {
+							// Mark the stream has been replayed.
 							playedStreams++
 							replayedStream = true
-
 							// Show the statistic of the replayed stream.
-							logrus.Infof("The `%s` events were all replayed in %.2f seconds, there's a total of %d events were in the stream.",
-								l.Stream,
-								time.Since(startTime).Seconds(),
-								totalEvents,
-							)
+							log.Logger.WithFields(logrus.Fields{
+								"stream": l.Stream,
+								"wasted": time.Since(startTime).Seconds(),
+								"amount": totalEvents,
+							}).Info("The event stream has been replayed successfully.")
 							// Set the `played` as true once we have replayed all the event streams.
 							if playedStreams >= totalStreams {
 								close(replayed)
 							}
 						}
-
 						// When there are no more events in the stream, set LongPoll.
 						// The server will wait for 15 seconds in this case or until
 						// events become available on the stream.
@@ -155,8 +167,10 @@ func (es *eventstore) capture(localUrl string, e *eventutil.Engine, replayed cha
 
 						err := writer.Append(nil, goes.NewEvent("", "", map[string]string{}, map[string]string{}))
 						if err != nil {
-							logrus.Errorln(err)
-							logrus.Fatalln("Error occurred while creating an empty stream.")
+							log.Logger.WithFields(logrus.Fields{
+								"stream": l.Stream,
+								"err":    err,
+							}).Fatal("Error occurred while creating an empty stream.")
 						}
 						continue
 
@@ -168,8 +182,10 @@ func (es *eventstore) capture(localUrl string, e *eventutil.Engine, replayed cha
 
 						// Other errors.
 					default:
-						logrus.Warningln(r.Err())
-						logrus.Warningln("Error occurred while reading the incoming event.")
+						log.Logger.WithFields(logrus.Fields{
+							"stream": l.Stream,
+							"err":    r.Err(),
+						}).Error("Error occurred while reading the incoming event.")
 						continue
 					}
 
@@ -179,24 +195,23 @@ func (es *eventstore) capture(localUrl string, e *eventutil.Engine, replayed cha
 					// Get the event body.
 					json, err := r.EventResponse().Event.Data.(*json.RawMessage).MarshalJSON()
 					if err != nil {
-						logrus.Warningln(err)
-						logrus.Warningf("Cannot parse the event data, the `%s` event has been skipped.", l.Stream)
+						log.Logger.WithFields(logrus.Fields{
+							"stream": l.Stream,
+							"err":    err,
+						}).Error("Cannot parse the event data, the event has been skipped.")
 						continue
 					}
 					// Skip the empty json event,
 					// because that might be the one which we used to create the new stream.
 					if isEmptyEvent(json) {
-						//logrus.Infof("Received the empty `%s` event.", l.Stream)
 						continue
 					}
-
-					//
+					// Counters.
 					totalEvents++
 					RecvTotal++
-
 					// Send the received data to the router,
 					// so we can process the event in the router.
-					go sendToRouter(l.Method, localUrl+l.Path, json)
+					go sendToRouter(l.Method, localURL+l.Path, json)
 
 					continue
 				}
@@ -205,20 +220,19 @@ func (es *eventstore) capture(localUrl string, e *eventutil.Engine, replayed cha
 	}
 }
 
+// push the events which are in the queue to the event store.
 func (es *eventstore) push(esURL string) {
 	for {
-		// Check the queue every second.
 		<-time.After(time.Millisecond * 10)
-
-		//calculate send rateRATE
 
 		// Ping the Event Store to see if it's back online or not.
 		if !es.isConnected {
 			if err := pingStore(esURL); err == nil {
 				es.isConnected = true
 				AllConnected = true
-
-				logrus.Infof("Event Store is back online, there are %d unsent events that will begin to send.", len(es.queue))
+				log.Logger.WithFields(logrus.Fields{
+					"unsent": len(es.queue),
+				}).Info("Event Store is back online, the unsent events that will begin to send.")
 			}
 			continue
 		}
@@ -231,17 +245,19 @@ func (es *eventstore) push(esURL string) {
 		// A downward loop for the queue.
 		for i := len(es.queue) - 1; i >= 0; i-- {
 			e := es.queue[i]
-			//
+			// Wait a little bit for another event.
 			<-time.After(time.Millisecond * 2)
 			// create the stream write.
 			writer := es.NewStreamWriter(e.stream)
 			// Append the event in the stream.
 			err := writer.Append(nil, goes.NewEvent("", "", e.data, e.meta))
 			if err != nil {
-				// ERR HANDLE
+				log.Logger.WithFields(logrus.Fields{
+					"stream": e.stream,
+					"meta":   e.meta,
+				}).Error("Error occurred while pushing the event to the stream of Event Store.")
 				continue
 			}
-			//
 			QueueTotal--
 			// Remove the event from the queue since it has been sent.
 			es.queue = append(es.queue[:i], es.queue[i+1:]...)
@@ -249,15 +265,20 @@ func (es *eventstore) push(esURL string) {
 	}
 }
 
+// send the event to the specified stream.
 func (es *eventstore) send(stream string, data interface{}, meta interface{}) {
-	// Prepend to keep the order, because the push queue is a downward loop.
+	// Prepend the event to the queue to keep the order,
+	// because the event queue is a downward loop.
 	es.queue = append([]event{event{stream, data, meta}}, es.queue...)
-	//
+
+	// Counters.
 	SentTotal++
-	//
 	QueueTotal++
-	//
+
 	if !es.isConnected {
-		logrus.Warningf("The `%s` event will be sent when the Event Store is back online. (Queue length: %d)", stream, len(es.queue))
+		log.Logger.WithFields(logrus.Fields{
+			"stream": stream,
+			"unsent": len(es.queue),
+		}).Warning("Event will be sent when the Event Store is back online.")
 	}
 }
