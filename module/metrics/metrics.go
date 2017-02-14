@@ -29,6 +29,7 @@ const (
 var startTime time.Time
 var path = "/metrics"
 
+// Metrics stores instrument data.
 type Metrics struct {
 	// CounterVec: Request
 	reqTotal,
@@ -40,7 +41,6 @@ type Metrics struct {
 	// Summary: Request & Response
 	reqDuration, reqSize, respSize prometheus.Summary
 
-	// circurit breaker
 	// Gauge: Uptime
 	uptime,
 	// Gauge: Event
@@ -60,17 +60,18 @@ type Metrics struct {
 	// Gauge: Network
 	networkIn, networkOut, networkInTotal, networkOutTotal, networkInPkt, networkOutPkt prometheus.Gauge
 
-	//
+	// Network outbound, inbout kbps.
 	lastOutbound,
 	lastInbound,
-	//
+	// Event received, sent total in the last second.
 	lastEvntRecv,
 	lastEvntSent,
-	//
+	// Message received, sent total in the last second.
 	lastMsgRecv,
 	lastMsgSent uint64
 }
 
+// information stores the system information.
 type information struct {
 	cpuCores int
 	cpuUsage []float64
@@ -82,6 +83,7 @@ type information struct {
 	network  []net.IOCountersStat
 }
 
+// systemInfo returns the system information.
 func systemInfo() (information, error) {
 	cpuCores, err := cpu.Counts(true)
 	if err != nil {
@@ -118,6 +120,7 @@ func systemInfo() (information, error) {
 	return information{cpuCores, cpuUsage, cpuTimes, cpuLoad, memVtul, memSwap, disk, network}, nil
 }
 
+// instrument the system, and stores the information to the `Metric` struct.
 func (m *Metrics) instrument() error {
 	info, err := systemInfo()
 	if err != nil {
@@ -173,6 +176,7 @@ func (m *Metrics) instrument() error {
 	return nil
 }
 
+// instruEvent instruments the event traffic.
 func (m *Metrics) instruEvent() {
 	for {
 		<-time.After(time.Second * 1)
@@ -198,6 +202,7 @@ func (m *Metrics) instruEvent() {
 	}
 }
 
+// instruMessage instruments the message traffic.
 func (m *Metrics) instruMessage() {
 	for {
 		<-time.After(time.Second * 1)
@@ -223,6 +228,7 @@ func (m *Metrics) instruMessage() {
 	}
 }
 
+// instruNetwork instruments the network traffic.
 func (m *Metrics) instruNetwork() {
 	for {
 		<-time.After(time.Second * 1)
@@ -240,6 +246,7 @@ func (m *Metrics) instruNetwork() {
 	}
 }
 
+// instruRequest instruments the http request information.
 func (m *Metrics) instruRequest(c *gin.Context) {
 	reqSize := make(chan int)
 	go computeReqSize(c.Request, reqSize)
@@ -256,28 +263,18 @@ func (m *Metrics) instruRequest(c *gin.Context) {
 	m.respSize.Observe(respSize)
 }
 
-/*func (m *Metrics) setESInfo(connected bool, queueLen, sentTotal, recvTotal int) {
-
-}*/
-
-/*func (m *Metrics) setMQInfo(connected bool, queueLen, sentTotal, recvTotal int) {
-
-}*/
-
-//
+// Handler handles and parses, calculates the incoming http requests.
 func (m *Metrics) Handler() gin.HandlerFunc {
 	// Keep instrumenting the network traffic.
 	go m.instruNetwork()
-	//
+	// Keep instrumenting the event traffic.
 	go m.instruEvent()
-	//
+	// Keep instrumenting the message traffic.
 	go m.instruMessage()
 
 	return func(c *gin.Context) {
-
 		switch c.Request.URL.String() {
-
-		// Ignore the health check in instrumenting.
+		// Ignore the health check requests.
 		case "/sd/health", "/sd/ram", "/sd/cpu", "/sd/disk":
 			c.Next()
 
@@ -290,12 +287,13 @@ func (m *Metrics) Handler() gin.HandlerFunc {
 			c.Next()
 
 			// Measure the bytes of the request and the response
-			// if it's the normal request.
+			// if it's the common HTTP request.
 		default:
-			// Modifiy the event total if it's an event request.
+			// Increase the event total if an event request was received.
 			if strings.Contains(c.Request.URL.String(), "/es/") {
 				m.evntRecvTotal.WithLabelValues(c.HandlerName()).Inc()
 			}
+			// Increase the message total if an message request was received.
 			if strings.Contains(c.Request.URL.String(), "/mq/") {
 				m.msgRecvTotal.WithLabelValues(c.HandlerName()).Inc()
 			}
@@ -305,6 +303,7 @@ func (m *Metrics) Handler() gin.HandlerFunc {
 	}
 }
 
+// PrometheusHandler serves the collected service information for Prometheus.
 func PrometheusHandler() gin.HandlerFunc {
 	h := promhttp.Handler()
 	return func(c *gin.Context) {
@@ -312,6 +311,7 @@ func PrometheusHandler() gin.HandlerFunc {
 	}
 }
 
+// New defines the instrument elements.
 func New() *Metrics {
 	m := &Metrics{}
 	startTime = time.Now()
@@ -550,7 +550,7 @@ func New() *Metrics {
 	prometheus.MustRegister(m.evntSent)
 	m.evntOnline = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "event_online",
-		Help: "1 if connected to the Event Store, otherwise 0.",
+		Help: "Returns 1 if connected to the Event Store, otherwise 0.",
 	})
 	prometheus.MustRegister(m.evntOnline)
 
@@ -596,14 +596,15 @@ func New() *Metrics {
 	prometheus.MustRegister(m.msgSent)
 	m.msgOnline = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "message_online",
-		Help: "1 if connected to the NSQ Producer, otherwise 0.",
+		Help: "Returns 1 if connected to the NSQ Producer, otherwise 0.",
 	})
 	prometheus.MustRegister(m.msgOnline)
 
 	return m
 }
 
-// From https://github.com/DanielHeckrath/gin-prometheus/blob/master/gin_prometheus.go
+// computeReqSize computes the byte size of the request,
+// from https://github.com/DanielHeckrath/gin-prometheus/blob/master/gin_prometheus.go
 func computeReqSize(r *http.Request, out chan int) {
 	s := 0
 	if r.URL != nil {
