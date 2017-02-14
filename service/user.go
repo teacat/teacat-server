@@ -33,15 +33,14 @@ func CreateUser(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-
 	// Insert the user to the database.
 	if err := store.CreateUser(c, &u); err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	//
+	// Publish the `send_mail` message to the message queue.
 	go mq.SendMail(c, &u)
-
+	// Send a `user_created` event to Event Store.
 	go event.UserCreated(c, &u)
 
 	// Show the user information.
