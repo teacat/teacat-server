@@ -5,6 +5,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/TeaMeow/KitSvc/model"
+	"github.com/TeaMeow/KitSvc/module/logger"
 	// The mysql driver for gorm.
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
@@ -30,8 +31,9 @@ func Open(user string, password string, host string, name string, charset string
 		user, password, host, name, charset, parseTime, loc,
 	))
 	if err != nil {
-		logrus.Errorln(err)
-		logrus.Fatalln("Database connection failed.")
+		logger.FatalFields("Database connection failed.", logrus.Fields{
+			"err": err,
+		})
 	}
 
 	cleanDatabase(db)
