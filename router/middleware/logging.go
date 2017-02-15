@@ -10,25 +10,28 @@ import (
 	"github.com/willf/pad"
 )
 
+// Logging is a middleware function that logs the each request.
 func Logging() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		start := time.Now().UTC()
 		path := c.Request.URL.Path
+		// Continue.
 		c.Next()
-
+		// Skip for the health check requests.
 		if path == "/metrics" || path == "/sd/health" || path == "/sd/ram" || path == "/sd/cpu" || path == "/sd/disk" {
 			return
 		}
-
+		// Calculates the latency.
 		end := time.Now().UTC()
 		latency := end.Sub(start)
 
+		// The basic informations.
 		status := c.Writer.Status()
 		method := c.Request.Method
 		ip := c.ClientIP()
 		userAgent := c.Request.UserAgent()
 
+		// Create the symbols for each status.
 		statusString := ""
 		switch {
 		case status >= 500:
@@ -41,28 +44,33 @@ func Logging() gin.HandlerFunc {
 			statusString = fmt.Sprintf("● %d", status)
 		}
 
+		// Data fields that will be recorded into the log files.
 		fields := logrus.Fields{
 			"user_agent": userAgent,
 		}
+		// Append the error to the fields so we can record it.
 		if len(c.Errors) != 0 {
 			for k, v := range c.Errors {
+				// Skip if it's the Gin internal error.
 				if !v.IsType(gin.ErrorTypePrivate) {
 					continue
 				}
-
+				// The field name with the `error_INDEX` format.
 				errorKey := fmt.Sprintf("error_%d", k)
 
+				// Get the detail from the error meta.
 				if v.Meta != nil {
 					m := v.Meta.(logger.RouteError)
 					fields[errorKey] = fmt.Sprintf("%s[%s:%d]", m.Code, m.Path, m.Line)
 
+					// Otherwise we log the error message only.
 				} else {
 					fields[errorKey] = fmt.Sprintf("%s", v.Err)
 				}
-
 			}
 		}
-		logger.InfoFields(fmt.Sprintf("%s | %13s | %12s | %s %s", statusString, latency, ip, pad.Right(method, 5, " "), path), fields)
 
+		// Example: ● 200 |  102.268592ms |    127.0.0.1 | POST  /user
+		logger.InfoFields(fmt.Sprintf("%s | %13s | %12s | %s %s", statusString, latency, ip, pad.Right(method, 5, " "), path), fields)
 	}
 }

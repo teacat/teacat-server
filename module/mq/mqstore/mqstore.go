@@ -84,7 +84,7 @@ func (l *lg) Output(calldepth int, s string) error {
 	case "DBG":
 		logger.Debug(s[9:len(s)])
 	case "INF":
-		// logger.Info(s[9:len(s)])
+		// Use debug so it won't be shown in the terminal.
 		logger.Debug(s[9:len(s)])
 	case "WRN":
 		logger.Warning(s[9:len(s)])

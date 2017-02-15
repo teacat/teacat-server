@@ -11,15 +11,20 @@ import (
 	"github.com/fatih/color"
 )
 
+// std represents the logger which outputs to the stdout.
 var std = logrus.New()
+
+// file represents the logger which outputs to the log file.
 var file = logrus.New()
 
+// formatter formats the output format.
 type formatter struct {
 	isStdout bool
 }
 
+// Format the input log.
 func (f *formatter) Format(e *logrus.Entry) ([]byte, error) {
-	// Implode the data to string with k=v format.
+	// Implode the data to string with `k=v` format.
 	dataString := ""
 	if len(e.Data) != 0 {
 		for k, v := range e.Data {
@@ -35,6 +40,7 @@ func (f *formatter) Format(e *logrus.Entry) ([]byte, error) {
 	// Get the message.
 	msg := e.Message
 
+	// Set the color of the level with STDOUT.
 	stdLevel := ""
 	switch level {
 	case "DEBU":
@@ -50,27 +56,32 @@ func (f *formatter) Format(e *logrus.Entry) ([]byte, error) {
 	}
 
 	body := fmt.Sprintf("%s[%s] %s ", level, time, msg)
-	data := fmt.Sprintf("(%s)", dataString)
-
+	data := fmt.Sprintf(" (%s)", dataString)
+	// Use the color level if it's STDOUT.
 	if f.isStdout {
-		body = fmt.Sprintf("%s[%s] %s ", stdLevel, time, msg)
+		body = fmt.Sprintf("%s[%s] %s", stdLevel, time, msg)
 		data = ""
 	}
-
+	// Hide the data if there's no data.
 	if len(e.Data) == 0 {
 		data = ""
 	}
+
+	// Mix the body and the data.
 	output := fmt.Sprintf("%s%s\n", body, data)
 
 	return []byte(output), nil
 }
 
+// RouteError represents an error which created by the route.
 type RouteError struct {
 	Code string
 	Path string
 	Line int
 }
 
+// Meta should be called in the routes.
+// It collects the caller information and returns the `RouterError` struct, so we can log the error detail.
 func Meta(lbl string) RouteError {
 	_, fn, line, _ := runtime.Caller(1)
 
@@ -81,11 +92,12 @@ func Meta(lbl string) RouteError {
 	}
 }
 
+// Init initializes the global logger.
 func Init(c *cli.Context) {
 	var stdFmt logrus.Formatter
 	var fileFmt logrus.Formatter
 
-	//
+	// Create the formatter for the both outputs.
 	stdFmt = &formatter{true}
 	fileFmt = &formatter{false}
 
@@ -94,13 +106,14 @@ func Init(c *cli.Context) {
 	std.Level = logrus.InfoLevel
 	std.Formatter = stdFmt
 
-	// File logger.
+	// File logger, create the log file when the file doesn't exist.
 	if _, err := os.Stat("./service.log"); os.IsNotExist(err) {
 		_, err := os.Create("./service.log")
 		if err != nil {
 			panic(err)
 		}
 	}
+	// Open the log file so we can write the text to it.
 	f, err := os.OpenFile("./service.log", os.O_APPEND|os.O_WRONLY, 0666)
 	if err != nil {
 		panic(err)
@@ -109,6 +122,7 @@ func Init(c *cli.Context) {
 	file.Level = logrus.DebugLevel
 	file.Formatter = fileFmt
 
+	// Show debug message if it's debug mode.
 	if c.Bool("debug") {
 		std.Level = logrus.DebugLevel
 	}
