@@ -6,6 +6,7 @@ import (
 
 	"github.com/TeaMeow/KitSvc/model"
 	"github.com/TeaMeow/KitSvc/module/event"
+	"github.com/TeaMeow/KitSvc/module/logger"
 	"github.com/TeaMeow/KitSvc/module/mq"
 	"github.com/TeaMeow/KitSvc/shared/auth"
 	"github.com/TeaMeow/KitSvc/shared/token"
@@ -20,22 +21,27 @@ func CreateUser(c *gin.Context) {
 	var u model.User
 
 	if err := c.Bind(&u); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		c.
+			AbortWithError(http.StatusBadRequest, err).
+			SetMeta(logger.Meta("BIND_ERROR"))
 		return
 	}
 	// Validate the data.
 	if err := u.Validate(); err != nil {
-		c.String(http.StatusBadRequest, err.Error())
+		c.
+			String(http.StatusBadRequest, err.Error())
 		return
 	}
 	// Encrypt the user password.
 	if err := u.Encrypt(); err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
+		c.
+			AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	// Insert the user to the database.
 	if err := store.CreateUser(c, &u); err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
+		c.
+			AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	// Publish the `send_mail` message to the message queue.

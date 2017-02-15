@@ -3,6 +3,7 @@ package logger
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
@@ -62,6 +63,12 @@ func (f *formatter) Format(e *logrus.Entry) ([]byte, error) {
 	output := fmt.Sprintf("%s%s\n", body, data)
 
 	return []byte(output), nil
+}
+
+func Meta(lbl string) string {
+	_, fn, line, _ := runtime.Caller(1)
+
+	return lbl + fmt.Sprintf("[%s:%d]", strings.Replace(fn, os.Getenv("GOPATH"), "", -1), line)
 }
 
 func Init(c *cli.Context) {
