@@ -46,26 +46,14 @@ func Logging() gin.HandlerFunc {
 		})
 
 		for _, v := range c.Errors {
-			typ := ""
-			switch {
-			case v.IsType(gin.ErrorTypeBind):
-				typ = "bind"
-			case v.IsType(gin.ErrorTypeRender):
-				typ = "render"
-			case v.IsType(gin.ErrorTypePrivate):
-				typ = "private"
-			case v.IsType(gin.ErrorTypePublic):
-				typ = "public"
-			case v.IsType(gin.ErrorTypeAny):
-				typ = "any"
-			case v.IsType(gin.ErrorTypeNu):
-				typ = "nu"
+			if !v.IsType(gin.ErrorTypePrivate) {
+				continue
 			}
 			met := ""
 			if v.Meta != nil {
-				met = fmt.Sprintf(", %s", v.Meta)
+				met = fmt.Sprintf(" (%s)", v.Meta)
 			}
-			logger.Error(fmt.Sprintf("%s (%s%s)", v.Err, typ, met))
+			logger.Error(fmt.Sprintf("%s%s", v.Err, met))
 		}
 	}
 }

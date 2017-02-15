@@ -68,7 +68,7 @@ func (f *formatter) Format(e *logrus.Entry) ([]byte, error) {
 func Meta(lbl string) string {
 	_, fn, line, _ := runtime.Caller(1)
 
-	return lbl + fmt.Sprintf("[%s:%d]", strings.Replace(fn, os.Getenv("GOPATH"), "", -1), line)
+	return fmt.Sprintf("%s, %s:%d", lbl, strings.Replace(fn, os.Getenv("GOPATH"), "", -1), line)
 }
 
 func Init(c *cli.Context) {
