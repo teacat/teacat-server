@@ -50,7 +50,7 @@ func (f *formatter) Format(e *logrus.Entry) ([]byte, error) {
 	}
 
 	body := fmt.Sprintf("%s[%s] %s ", level, time, msg)
-	data := fmt.Sprintf("\n(%s)", dataString)
+	data := fmt.Sprintf("(%s)", dataString)
 
 	if f.isStdout {
 		body = fmt.Sprintf("%s[%s] %s ", stdLevel, time, msg)
@@ -65,10 +65,20 @@ func (f *formatter) Format(e *logrus.Entry) ([]byte, error) {
 	return []byte(output), nil
 }
 
-func Meta(lbl string) string {
+type RouteError struct {
+	Code string
+	Path string
+	Line int
+}
+
+func Meta(lbl string) RouteError {
 	_, fn, line, _ := runtime.Caller(1)
 
-	return fmt.Sprintf("%s, %s:%d", lbl, strings.Replace(fn, os.Getenv("GOPATH"), "", -1), line)
+	return RouteError{
+		Code: lbl,
+		Path: strings.Replace(fn, os.Getenv("GOPATH"), "", -1),
+		Line: line,
+	}
 }
 
 func Init(c *cli.Context) {

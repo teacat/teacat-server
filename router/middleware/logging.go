@@ -41,19 +41,28 @@ func Logging() gin.HandlerFunc {
 			statusString = fmt.Sprintf("● %d", status)
 		}
 
-		logger.InfoFields(fmt.Sprintf("%s | %13s | %12s | %s %s", statusString, latency, ip, pad.Right(method, 5, " "), path), logrus.Fields{
+		fields := logrus.Fields{
 			"user_agent": userAgent,
-		})
-
-		for _, v := range c.Errors {
-			if !v.IsType(gin.ErrorTypePrivate) {
-				continue
-			}
-			met := ""
-			if v.Meta != nil {
-				met = fmt.Sprintf(" (%s)", v.Meta)
-			}
-			logger.Error(fmt.Sprintf("%s%s", v.Err, met))
 		}
+		if len(c.Errors) != 0 {
+			for k, v := range c.Errors {
+				if !v.IsType(gin.ErrorTypePrivate) {
+					continue
+				}
+
+				errorKey := fmt.Sprintf("error_%d", k)
+
+				if v.Meta != nil {
+					m := v.Meta.(logger.RouteError)
+					fields[errorKey] = fmt.Sprintf("%s[%s:%d]", m.Code, m.Path, m.Line)
+
+				} else {
+					fields[errorKey] = fmt.Sprintf("%s", v.Err)
+				}
+
+			}
+		}
+		logger.InfoFields(fmt.Sprintf("%s | %13s | %12s | %s %s", statusString, latency, ip, pad.Right(method, 5, " "), path), fields)
+
 	}
 }
