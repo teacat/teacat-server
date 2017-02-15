@@ -1,8 +1,6 @@
 package router
 
 import (
-	"os"
-
 	"github.com/TeaMeow/KitSvc/module/metrics"
 	"github.com/TeaMeow/KitSvc/module/sd"
 	"github.com/TeaMeow/KitSvc/router/middleware/header"
@@ -16,7 +14,7 @@ import (
 // Load loads the middlewares, routes, handlers.
 func Load(g *gin.Engine, e *eventutil.Engine, w *wsutil.Engine, m *mqutil.Engine, mw ...gin.HandlerFunc) *gin.Engine {
 	// Middlewares.
-	g.Use(gin.LoggerWithWriter(os.Stdout, "/metrics", "/sd/health", "/sd/ram", "/sd/cpu", "/sd/disk"))
+	//g.Use(gin.LoggerWithWriter(os.Stdout, "/metrics", "/sd/health", "/sd/ram", "/sd/cpu", "/sd/disk"))
 	g.Use(gin.Recovery())
 	g.Use(header.NoCache)
 	g.Use(header.Options)
