@@ -8,6 +8,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/TeaMeow/KitSvc/module/event/eventstore"
+	"github.com/TeaMeow/KitSvc/module/logger"
 	"github.com/TeaMeow/KitSvc/module/mq/mqstore"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
@@ -281,8 +282,9 @@ func (m *Metrics) Handler() gin.HandlerFunc {
 			// Collect the system information when we received the metrics request.
 		case path:
 			if err := m.instrument(); err != nil {
-				logrus.Errorln(err)
-				logrus.Warningln("Error occurred while instrumenting the system.")
+				logger.WarningFields("Error occurred while instrumenting the system.", logrus.Fields{
+					"err": err,
+				})
 			}
 			c.Next()
 

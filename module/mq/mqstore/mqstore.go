@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/TeaMeow/KitSvc/module/logger"
 	"github.com/TeaMeow/KitSvc/shared/mqutil"
 	nsq "github.com/bitly/go-nsq"
 	"github.com/parnurzeal/gorequest"
@@ -39,27 +40,35 @@ type message struct {
 	body  []byte
 }
 
+// lg is a logger for NSQ.
+type lg struct {
+}
+
 // NewProducer creates a new NSQ producer, and start to capturing the incoming messages.
 func NewProducer(url, producer, prodHTTP string, lookupds []string, m *mqutil.Engine, deployed <-chan bool) *mqstore {
 	// Ping the Event Store to make sure it's alive.
 	if err := pingMQ(prodHTTP); err != nil {
-		logrus.Fatalln(err)
+		logger.Fatal(err)
 	}
-
 	config := nsq.NewConfig()
+	// Create the producer.
 	prod, err := nsq.NewProducer(producer, config)
-	//prod.SetLogger(nil, nsq.LogLevelError)
+	// Set the logger for the producer.
+	prod.SetLogger(&lg{}, nsq.LogLevelDebug)
 	if err != nil {
-		logrus.Errorln(err)
-		logrus.Fatalln("Error occurred while creating the NSQ producer.")
+		logger.FatalFields("Error occurred while creating the NSQ producer.", logrus.Fields{
+			"err":      err,
+			"url":      url,
+			"producer": producer,
+			"http":     prodHTTP,
+			"lookupds": lookupds,
+		})
 	}
-
 	ms := &mqstore{
 		Producer:    prod,
 		config:      config,
 		isConnected: true,
 	}
-
 	// Capturing the messages when the router was ready in the goroutine.
 	go ms.capture(url, prodHTTP, lookupds, m, deployed)
 	// Pushing the messages which are in the local queue to the remote message queue.
@@ -68,7 +77,22 @@ func NewProducer(url, producer, prodHTTP string, lookupds []string, m *mqutil.En
 	return ms
 }
 
-// TODO: PING LOOKUPD
+// Output the error to the global logger.
+func (l *lg) Output(calldepth int, s string) error {
+	typ := s[0:3]
+	switch typ {
+	case "DBG":
+		logger.Debug(s[9:len(s)])
+	case "INF":
+		// logger.Info(s[9:len(s)])
+		logger.Debug(s[9:len(s)])
+	case "WRN":
+		logger.Warning(s[9:len(s)])
+	case "ERR":
+		logger.Error(s[9:len(s)])
+	}
+	return nil
+}
 
 // pingMQ pings the NSQ with backoff to ensure
 // a connection can be established before we proceed with the
@@ -79,8 +103,8 @@ func pingMQ(addr string) error {
 		if err == nil {
 			return nil
 		}
-		logrus.Infof("Cannot connect to NSQ producer, retry in 3 second.")
-		time.Sleep(time.Second * 3)
+		logger.Info("Cannot connect to NSQ producer, retry in 1 second.")
+		time.Sleep(time.Second * 1)
 	}
 
 	return errors.New("Cannot connect to NSQ producer.")
@@ -95,12 +119,20 @@ func sendToRouter(method string, url string, json []byte) {
 		Send(string(json)).
 		End()
 	if err != nil {
-		logrus.Errorln(err)
-		// not fatal, TOO PANIC!
-		logrus.Fatalln("Error occurred while sending the event to self router.")
+		logger.ErrorFields("Error occurred while sending the message to self router.", logrus.Fields{
+			"err":    err,
+			"method": method,
+			"url":    url,
+			"body":   json,
+		})
 	}
 	if resp.StatusCode != 200 {
-		logrus.Infoln("The event has been recevied by the router, but the status code wasn't 200.")
+		logger.InfoFields("The message has been recevied by the router, but the status code wasn't 200.", logrus.Fields{
+			"status": resp.StatusCode,
+			"method": method,
+			"url":    url,
+			"body":   json,
+		})
 	}
 }
 
@@ -112,38 +144,23 @@ func createTopic(httpProducer, topic string) {
 	cmd.Wait()
 }
 
-type logger struct {
-}
-
-func (l *logger) Output(calldepth int, s string) error {
-	logger := logrus.StandardLogger()
-	typ := s[0:3]
-	switch typ {
-	case "DBG":
-		logger.Debug(s[9:len(s)])
-	case "INF":
-		logger.Info(s[9:len(s)])
-	case "WRN":
-		logger.Warn(s[9:len(s)])
-	case "ERR":
-		logger.Error(s[9:len(s)])
-	}
-
-	return nil
-}
-
 // capture the incoming events.
 func (mq *mqstore) capture(url string, prodHTTP string, lookupds []string, m *mqutil.Engine, deployed <-chan bool) {
 	// Continue if the router was ready.
 	<-deployed
 	// Each of the topic listener.
 	for _, v := range m.Listeners {
+		// Create the consumer.
 		c, err := nsq.NewConsumer(v.Topic, v.Channel, nsq.NewConfig())
-		l := &logger{}
-		c.SetLogger(l, nsq.LogLevelDebug)
+		// Set the logger for the consumer.
+		c.SetLogger(&lg{}, nsq.LogLevelDebug)
 		if err != nil {
-			logrus.Errorln(err)
-			logrus.Fatalf("Cannot create the NSQ `%s` consumer. (channel: %s)", v.Topic, v.Channel)
+			logger.FatalFields("Cannot create the NSQ consumer.", logrus.Fields{
+				"channel": v.Channel,
+				"topic":   v.Topic,
+				"path":    v.Path,
+				"method":  v.Method,
+			})
 		}
 
 		// Create the topic to make sure it does exist before we subscribe to it.
@@ -159,8 +176,12 @@ func (mq *mqstore) capture(url string, prodHTTP string, lookupds []string, m *mq
 
 		// Connect to the NSQLookupds instead of a single NSQ node.
 		if err := c.ConnectToNSQLookupds(lookupds); err != nil {
-			logrus.Errorln(err)
-			logrus.Fatalln("Cannot connect to the NSQ lookupds.")
+			logger.FatalFields("Cannot connect to the NSQ lookupds.", logrus.Fields{
+				"err":      err,
+				"lookupds": lookupds,
+				"channel":  v.Channel,
+				"topic":    v.Topic,
+			})
 		}
 	}
 }
@@ -176,7 +197,9 @@ func (mq *mqstore) push(prodHTTP string) {
 				mq.isConnected = true
 				AllConnected = true
 
-				logrus.Infof("NSQ Producer is back online, there are %d unsent messages that will begin to send.", len(mq.queue))
+				logger.InfoFields("NSQ producer is back online, there are %d unsent messages that will begin to send.", logrus.Fields{
+					"unsent": len(mq.queue),
+				})
 			}
 			continue
 		}
@@ -207,7 +230,11 @@ func (mq *mqstore) push(prodHTTP string) {
 func (mq *mqstore) send(topic string, data interface{}) {
 	body, err := json.Marshal(data)
 	if err != nil {
-		//return err
+		logger.ErrorFields("Error occurred while converting the data to json.", logrus.Fields{
+			"err":   err,
+			"topic": topic,
+			"data":  data,
+		})
 	}
 	// Counter.
 	SentTotal++
@@ -225,7 +252,10 @@ func (mq *mqstore) send(topic string, data interface{}) {
 				mq.queue = append([]message{message{topic, body}}, mq.queue...)
 				// Counter.
 				QueueTotal++
-				logrus.Warningf("The `%s` message will be sent when the NSQ Producer is back online. (queue length: %d)", topic, len(mq.queue))
+				logger.WarningFields("Message will be sent when the NSQ producer is back online.", logrus.Fields{
+					"topic":  topic,
+					"unsent": len(mq.queue),
+				})
 			}
 		}
 	}

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/TeaMeow/KitSvc/module/log"
+	"github.com/TeaMeow/KitSvc/module/logger"
 	"github.com/TeaMeow/KitSvc/shared/eventutil"
 	"github.com/jetbasrawi/go.geteventstore"
 	"github.com/parnurzeal/gorequest"
@@ -42,15 +42,15 @@ type event struct {
 func NewClient(url string, esURL string, username string, password string, e *eventutil.Engine, replayed chan<- bool, deployed <-chan bool) *eventstore {
 	// Ping the Event Store to make sure it's alive.
 	if err := pingStore(esURL); err != nil {
-		logrus.Fatalln(err)
+		logger.Fatal(err)
 	}
 	// Create the client to Event Store.
 	client, err := goes.NewClient(nil, esURL)
 	if err != nil {
-		log.Logger.WithFields(logrus.Fields{
+		logger.FatalFields("Cannot create the client for Event Store.", logrus.Fields{
 			"err":    err,
 			"remote": esURL,
-		}).Fatal("Cannot create the client for Event Store.")
+		})
 	}
 	client.SetBasicAuth(username, password)
 
@@ -77,7 +77,7 @@ func pingStore(url string) error {
 		if err == nil {
 			return nil
 		}
-		log.Logger.Info("Cannot connect to Event Store, retry in 1 second.")
+		logger.Info("Cannot connect to Event Store, retry in 1 second.")
 		time.Sleep(time.Second)
 	}
 	return errors.New("Cannot connect to Event Store.")
@@ -92,20 +92,20 @@ func sendToRouter(method string, url string, json []byte) {
 		Send(string(json)).
 		End()
 	if err != nil {
-		log.Logger.WithFields(logrus.Fields{
+		logger.ErrorFields("Error occurred while sending the event to self router.", logrus.Fields{
 			"err":    err,
 			"method": method,
 			"url":    url,
 			"body":   json,
-		}).Error("Error occurred while sending the event to self router.")
+		})
 	}
 	if resp.StatusCode != 200 {
-		log.Logger.WithFields(logrus.Fields{
+		logger.InfoFields("The event has been recevied by the router, but the status code wasn't 200.", logrus.Fields{
 			"status": resp.StatusCode,
 			"method": method,
 			"url":    url,
 			"body":   json,
-		}).Info("The event has been recevied by the router, but the status code wasn't 200.")
+		})
 	}
 }
 
@@ -146,11 +146,11 @@ func (es *eventstore) capture(localURL string, e *eventutil.Engine, replayed cha
 							playedStreams++
 							replayedStream = true
 							// Show the statistic of the replayed stream.
-							log.Logger.WithFields(logrus.Fields{
+							logger.InfoFields("The event stream has been replayed successfully.", logrus.Fields{
 								"stream": l.Stream,
 								"wasted": time.Since(startTime).Seconds(),
 								"amount": totalEvents,
-							}).Info("The event stream has been replayed successfully.")
+							})
 							// Set the `played` as true once we have replayed all the event streams.
 							if playedStreams >= totalStreams {
 								close(replayed)
@@ -167,10 +167,10 @@ func (es *eventstore) capture(localURL string, e *eventutil.Engine, replayed cha
 
 						err := writer.Append(nil, goes.NewEvent("", "", map[string]string{}, map[string]string{}))
 						if err != nil {
-							log.Logger.WithFields(logrus.Fields{
+							logger.FatalFields("Error occurred while creating an empty stream.", logrus.Fields{
 								"stream": l.Stream,
 								"err":    err,
-							}).Fatal("Error occurred while creating an empty stream.")
+							})
 						}
 						continue
 
@@ -182,10 +182,10 @@ func (es *eventstore) capture(localURL string, e *eventutil.Engine, replayed cha
 
 						// Other errors.
 					default:
-						log.Logger.WithFields(logrus.Fields{
+						logger.ErrorFields("Error occurred while reading the incoming event.", logrus.Fields{
 							"stream": l.Stream,
 							"err":    r.Err(),
-						}).Error("Error occurred while reading the incoming event.")
+						})
 						continue
 					}
 
@@ -195,10 +195,10 @@ func (es *eventstore) capture(localURL string, e *eventutil.Engine, replayed cha
 					// Get the event body.
 					json, err := r.EventResponse().Event.Data.(*json.RawMessage).MarshalJSON()
 					if err != nil {
-						log.Logger.WithFields(logrus.Fields{
+						logger.ErrorFields("Cannot parse the event data, the event has been skipped.", logrus.Fields{
 							"stream": l.Stream,
 							"err":    err,
-						}).Error("Cannot parse the event data, the event has been skipped.")
+						})
 						continue
 					}
 					// Skip the empty json event,
@@ -230,9 +230,9 @@ func (es *eventstore) push(esURL string) {
 			if err := pingStore(esURL); err == nil {
 				es.isConnected = true
 				AllConnected = true
-				log.Logger.WithFields(logrus.Fields{
+				logger.InfoFields("Event Store is back online, the unsent events that will begin to send.", logrus.Fields{
 					"unsent": len(es.queue),
-				}).Info("Event Store is back online, the unsent events that will begin to send.")
+				})
 			}
 			continue
 		}
@@ -252,10 +252,10 @@ func (es *eventstore) push(esURL string) {
 			// Append the event in the stream.
 			err := writer.Append(nil, goes.NewEvent("", "", e.data, e.meta))
 			if err != nil {
-				log.Logger.WithFields(logrus.Fields{
+				logger.ErrorFields("Error occurred while pushing the event to the stream of Event Store.", logrus.Fields{
 					"stream": e.stream,
 					"meta":   e.meta,
-				}).Error("Error occurred while pushing the event to the stream of Event Store.")
+				})
 				continue
 			}
 			QueueTotal--
@@ -276,9 +276,9 @@ func (es *eventstore) send(stream string, data interface{}, meta interface{}) {
 	QueueTotal++
 
 	if !es.isConnected {
-		log.Logger.WithFields(logrus.Fields{
+		logger.WarningFields("Event will be sent when the Event Store is back online.", logrus.Fields{
 			"stream": stream,
 			"unsent": len(es.queue),
-		}).Warning("Event will be sent when the Event Store is back online.")
+		})
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/TeaMeow/KitSvc/module/logger"
 	"github.com/TeaMeow/KitSvc/version"
 	"github.com/codegangsta/cli"
 	"github.com/hashicorp/consul/api"
@@ -17,8 +18,9 @@ func newClient(c *cli.Context) *api.Client {
 	apiConfig := api.DefaultConfig()
 	apiClient, err := api.NewClient(apiConfig)
 	if err != nil {
-		logrus.Errorln(err)
-		logrus.Fatalln("Error occurred while creating the Consul api client.")
+		logger.FatalFields("Error occurred while creating the Consul API client.", logrus.Fields{
+			"err": err,
+		})
 	}
 	return apiClient
 }
@@ -41,14 +43,16 @@ func Register(c *cli.Context) {
 	}
 
 	if err := client.Agent().ServiceRegister(info); err != nil {
-		logrus.Errorln(err)
-		logrus.Fatalln("Error occurred while registering to the service registry (Is consul running?).")
+		logger.FatalFields("Error occurred while registering to the service registry (Is consul running?).", logrus.Fields{
+			"err": err,
+		})
 	}
-	logrus.Infof("The service id is `%s` (%s).", id, strings.Join(tags, ", "))
-
+	logger.InfoFields("The service has been registered to the Consul successfully.", logrus.Fields{
+		"id":   id,
+		"tags": strings.Join(tags, ", "),
+	})
 	// Register the health check handlers.
 	registerChecks(c, client, id)
-
 	// Deregister the service when exiting the program.
 	deregister(client, id)
 }
@@ -111,10 +115,14 @@ func deregister(client *api.Client, id string) {
 	go func() {
 		for range ch {
 			if err := client.Agent().ServiceDeregister(id); err != nil {
-				logrus.Errorln(err)
-				logrus.Fatalln("Cannot deregister the service from the service registry.")
+				logger.FatalFields("Cannot deregister the service from the service registry.", logrus.Fields{
+					"err": err,
+					"id":  id,
+				})
 			} else {
-				logrus.Infoln("The service has been deregistered from the service registry successfully.")
+				logger.InfoFields("The service has been deregistered from the service registry successfully.", logrus.Fields{
+					"id": id,
+				})
 			}
 			os.Exit(1)
 		}
