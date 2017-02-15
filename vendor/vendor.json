@@ -40,6 +40,12 @@
 			"revisionTime": "2016-11-01T19:39:35Z"
 		},
 		{
+			"checksumSHA1": "7oFpbmDfGobwKsFLIf6wMUvVoKw=",
+			"path": "github.com/fatih/color",
+			"revision": "5ec5d9d3c2cf82e9688b34e9bc27a94d616a7193",
+			"revisionTime": "2017-02-09T08:00:14Z"
+		},
+		{
 			"checksumSHA1": "RDDo6zqKb6Mpa4EOFv0RT8ryXvQ=",
 			"path": "github.com/gin-gonic/gin",
 			"revision": "bb159f9260a262fccbdbd6f37f8575d1e7e6aaa0",
@@ -148,6 +154,18 @@
 			"path": "github.com/manucorporat/sse",
 			"revision": "ee05b128a739a0fb76c7ebd3ae4810c1de808d6d",
 			"revisionTime": "2016-01-26T18:01:36Z"
+		},
+		{
+			"checksumSHA1": "I4njd26dG5hxFT2nawuByM4pxzY=",
+			"path": "github.com/mattn/go-colorable",
+			"revision": "5411d3eea5978e6cdc258b30de592b60df6aba96",
+			"revisionTime": "2017-02-10T17:28:01Z"
+		},
+		{
+			"checksumSHA1": "EkT5JmFvz3zOPWappEFyYWUaeY0=",
+			"path": "github.com/mattn/go-isatty",
+			"revision": "281032e84ae07510239465db46bf442aa44b953a",
+			"revisionTime": "2017-02-09T17:56:15Z"
 		},
 		{
 			"checksumSHA1": "bKMZjd2wPw13VwoE7mBeSv5djFA=",
@@ -281,6 +299,12 @@
 			"path": "github.com/stretchr/testify/assert",
 			"revision": "2402e8e7a02fc811447d11f881aa9746cdc57983",
 			"revisionTime": "2016-12-17T20:04:45Z"
+		},
+		{
+			"checksumSHA1": "shTCYnhVnwNkeP2bpqb1FOIIyNA=",
+			"path": "github.com/willf/pad",
+			"revision": "b3d7806010228b1a954b4d9c4ee4cf6cb476b063",
+			"revisionTime": "2016-03-31T13:10:08Z"
 		},
 		{
 			"checksumSHA1": "vE43s37+4CJ2CDU6TlOUOYE0K9c=",
