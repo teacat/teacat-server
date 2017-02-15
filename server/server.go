@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/TeaMeow/KitSvc/module/logger"
 	"github.com/TeaMeow/KitSvc/module/sd"
 	"github.com/TeaMeow/KitSvc/router"
 	"github.com/TeaMeow/KitSvc/router/middleware"
@@ -59,6 +59,11 @@ var serverFlags = []cli.Flag{
 		Name:   "max-ping-count",
 		Usage:  "",
 		Value:  20,
+	},
+	cli.StringFlag{
+		EnvVar: "KITSVC_DEBUG",
+		Name:   "debug",
+		Usage:  "enable the debug mode.",
 	},
 
 	// Database flags.
@@ -187,23 +192,30 @@ var serverFlags = []cli.Flag{
 // server runs the server.
 func server(c *cli.Context, started chan bool) error {
 	// `deployed` will be closed when the router is deployed.
-	// `replayed` will be closed after the events are all replayed.
 	deployed := make(chan bool)
+	// `replayed` will be closed after the events are all replayed.
 	replayed := make(chan bool)
 
+	// Debug mode.
+	if !c.Bool("debug") {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	// Initialize the logger.
+	logger.Init(c)
 	// Create the Gin engine.
-	gin := gin.New()
+	g := gin.New()
 	// Event handlers.
-	event := eventutil.New(gin)
+	event := eventutil.New(g)
 	// Websocket handlers.
-	ws := wsutil.New(gin)
+	ws := wsutil.New(g)
 	// Message queue handlers.
-	mq := mqutil.New(gin)
+	mq := mqutil.New(g)
 
 	// Routes.
 	router.Load(
 		// Cores.
-		gin, event, ws, mq,
+		g, event, ws, mq,
 		// Middlwares.
 		middleware.Config(c),
 		middleware.Store(c),
@@ -226,15 +238,15 @@ func server(c *cli.Context, started chan bool) error {
 	// Ping the server to make sure the router is working.
 	go func() {
 		if err := pingServer(c); err != nil {
-			logrus.Fatalln("The router has no response, or it might took too long to start up.")
+			logger.Fatal("The router has no response, or it might took too long to start up.")
 		}
-		logrus.Infoln("The router has been deployed successfully.")
+		logger.Info("The router has been deployed successfully.")
 		// Close the `deployed` channel to make it non-blocking.
 		close(deployed)
 	}()
 
 	// Start to listening the incoming requests.
-	return http.ListenAndServe(c.String("addr"), gin)
+	return http.ListenAndServe(c.String("addr"), g)
 }
 
 // pingServer pings the http server to make sure the router is working.
@@ -247,7 +259,7 @@ func pingServer(c *cli.Context) error {
 		}
 
 		// Sleep for a second to continue the next ping.
-		logrus.Infof("Waiting for the router, retry in 1 second.")
+		logger.Info("Waiting for the router, retry in 1 second.")
 		time.Sleep(time.Second)
 	}
 	return errors.New("Cannot connect to the router.")
