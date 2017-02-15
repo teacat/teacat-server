@@ -7,7 +7,7 @@ test:
 	go test ./server
 
 test_mysql:
-
+	go test github.com/TeaMeow/KitSvc/store/datastore
 
 run:
 	go build -o ./bin/main ./server
