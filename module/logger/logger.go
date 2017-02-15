@@ -13,11 +13,11 @@ import (
 var std = logrus.New()
 var file = logrus.New()
 
-type fileFormatter struct {
+type formatter struct {
 	isStdout bool
 }
 
-func (f *fileFormatter) Format(e *logrus.Entry) ([]byte, error) {
+func (f *formatter) Format(e *logrus.Entry) ([]byte, error) {
 	// Implode the data to string with k=v format.
 	dataString := ""
 	if len(e.Data) != 0 {
@@ -39,7 +39,7 @@ func (f *fileFormatter) Format(e *logrus.Entry) ([]byte, error) {
 	case "DEBU":
 		stdLevel = color.New(color.FgWhite).Sprint(level)
 	case "INFO":
-		stdLevel = color.New(color.FgBlue).Sprint(level)
+		stdLevel = color.New(color.FgCyan).Sprint(level)
 	case "WARN":
 		stdLevel = color.New(color.FgYellow).Sprint(level)
 	case "ERRO":
@@ -53,7 +53,7 @@ func (f *fileFormatter) Format(e *logrus.Entry) ([]byte, error) {
 
 	if f.isStdout {
 		body = fmt.Sprintf("%s[%s] %s ", stdLevel, time, msg)
-		data = color.New(color.FgMagenta).Sprintf("\n(%s)", dataString)
+		data = ""
 	}
 
 	if len(e.Data) == 0 {
@@ -65,18 +65,17 @@ func (f *fileFormatter) Format(e *logrus.Entry) ([]byte, error) {
 }
 
 func Init(c *cli.Context) {
+	var stdFmt logrus.Formatter
 	var fileFmt logrus.Formatter
 
-	/*formatter := &logrus.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "2006-01-02 15:04:05",
-	}*/
-	fileFmt = &fileFormatter{}
+	//
+	stdFmt = &formatter{true}
+	fileFmt = &formatter{false}
 
 	// Std logger.
 	std.Out = os.Stdout
 	std.Level = logrus.InfoLevel
-	std.Formatter = fileFmt
+	std.Formatter = stdFmt
 
 	// File logger.
 	if _, err := os.Stat("./service.log"); os.IsNotExist(err) {
@@ -92,8 +91,6 @@ func Init(c *cli.Context) {
 	file.Out = f
 	file.Level = logrus.DebugLevel
 	file.Formatter = fileFmt
-	//file.Formatter = formatter
-	//file.Formatter = &logrus.JSONFormatter{}
 
 	if c.Bool("debug") {
 		std.Level = logrus.DebugLevel
