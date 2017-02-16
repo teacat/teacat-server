@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/TeaMeow/KitSvc/errno"
 	"github.com/TeaMeow/KitSvc/module/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/willf/pad"
@@ -58,15 +59,23 @@ func Logging() gin.HandlerFunc {
 				// The field name with the `error_INDEX` format.
 				errorKey := fmt.Sprintf("error_%d", k)
 
-				// Get the detail from the error meta.
-				if v.Meta != nil {
-					m := v.Meta.(logger.RouteError)
-					fields[errorKey] = fmt.Sprintf("%s[%s:%d]", m.Code, m.Path, m.Line)
-
-					// Otherwise we log the error message only.
-				} else {
+				switch v.Err.(type) {
+				case *errno.Err:
+					e := v.Err.(*errno.Err)
+					fields[errorKey] = fmt.Sprintf("%s[%s:%d]", e.Code, e.Path, e.Line)
+					c.String(e.StatusCode, fmt.Sprintf("%s (Code: %s)", e.Message, e.Code))
+				default:
 					fields[errorKey] = fmt.Sprintf("%s", v.Err)
 				}
+				// Get the detail from the error meta.
+				//if v.Meta != nil {
+				//	m := v.Meta.(logger.RouteError)
+				//	fields[errorKey] = fmt.Sprintf("%s[%s:%d]", m.Code, m.Path, m.Line)
+				//
+				//	// Otherwise we log the error message only.
+				//} else {
+				//	fields[errorKey] = fmt.Sprintf("%s", v.Err)
+				//}
 			}
 		}
 

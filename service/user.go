@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/TeaMeow/KitSvc/errno"
 	"github.com/TeaMeow/KitSvc/model"
 	"github.com/TeaMeow/KitSvc/module/event"
-	"github.com/TeaMeow/KitSvc/module/logger"
 	"github.com/TeaMeow/KitSvc/module/mq"
 	"github.com/TeaMeow/KitSvc/shared/auth"
 	"github.com/TeaMeow/KitSvc/shared/token"
@@ -21,9 +21,9 @@ func CreateUser(c *gin.Context) {
 	var u model.User
 
 	if err := c.Bind(&u); err != nil {
-		c.
-			AbortWithError(http.StatusBadRequest, err).
-			SetMeta(logger.Meta("BIND_ERROR"))
+		//errno.Abort("Bind", err, c)
+		c.Error(errno.Error("Bind"))
+		c.Abort()
 		return
 	}
 	// Validate the data.

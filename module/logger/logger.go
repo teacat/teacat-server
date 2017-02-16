@@ -3,7 +3,6 @@ package logger
 import (
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
@@ -71,25 +70,6 @@ func (f *formatter) Format(e *logrus.Entry) ([]byte, error) {
 	output := fmt.Sprintf("%s%s\n", body, data)
 
 	return []byte(output), nil
-}
-
-// RouteError represents an error which created by the route.
-type RouteError struct {
-	Code string
-	Path string
-	Line int
-}
-
-// Meta should be called in the routes.
-// It collects the caller information and returns the `RouterError` struct, so we can log the error detail.
-func Meta(lbl string) RouteError {
-	_, fn, line, _ := runtime.Caller(1)
-
-	return RouteError{
-		Code: lbl,
-		Path: strings.Replace(fn, os.Getenv("GOPATH"), "", -1),
-		Line: line,
-	}
 }
 
 // Init initializes the global logger.
