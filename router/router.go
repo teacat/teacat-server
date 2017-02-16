@@ -45,7 +45,7 @@ func Load(g *gin.Engine, e *eventutil.Engine, w *wsutil.Engine, m *mqutil.Engine
 	g.GET("/metrics", metrics.PrometheusHandler())
 
 	// WebSockets.
-	w.Handle("/", service.WatchUser)
+	w.Handle("/websocket", service.WatchUser)
 
 	// Message handlers.
 	m.Capture("user", "send_mail", service.SendMail)
