@@ -29,8 +29,8 @@ func (e *Engine) Handle(relativePath string, handler gin.HandlerFunc) {
 }
 
 // Get gets the WebSocket connection from the Gin context.
-func Get(c *gin.Context) (ws melody.Melody) {
+func Get(c *gin.Context) (ws *melody.Melody) {
 	w, _ := c.Get("websocket")
-	ws = w.(melody.Melody)
+	ws = w.(*melody.Melody)
 	return
 }
