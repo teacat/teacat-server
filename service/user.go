@@ -19,29 +19,23 @@ import (
 // CreateUser creates a new user account.
 func CreateUser(c *gin.Context) {
 	var u model.User
-
 	if err := c.Bind(&u); err != nil {
 		errno.Abort("BIND_ERR", err, c)
-		//c.Error(errno.Error("BIND_ERR"))
-		//c.Abort()
 		return
 	}
 	// Validate the data.
 	if err := u.Validate(); err != nil {
-		c.
-			String(http.StatusBadRequest, err.Error())
+		errno.Abort("VALIDATION_ERR", err, c)
 		return
 	}
 	// Encrypt the user password.
 	if err := u.Encrypt(); err != nil {
-		c.
-			AbortWithError(http.StatusInternalServerError, err)
+		errno.Abort("ENCRYPT_ERR", err, c)
 		return
 	}
 	// Insert the user to the database.
 	if err := store.CreateUser(c, &u); err != nil {
-		c.
-			AbortWithError(http.StatusInternalServerError, err)
+		errno.Abort("DB_ERR", err, c)
 		return
 	}
 	// Publish the `send_mail` message to the message queue.
@@ -57,13 +51,14 @@ func CreateUser(c *gin.Context) {
 func GetUser(c *gin.Context) {
 	// Get the `username` from the url parameter.
 	username := c.Param("username")
-
 	// Get the user by the `username` from the database.
-	if u, err := store.GetUser(c, username); err != nil {
-		c.String(http.StatusNotFound, "The user was not found.")
-	} else {
-		c.JSON(http.StatusOK, u)
+	u, err := store.GetUser(c, username)
+	if err != nil {
+		errno.Abort("USER_NOT_FOUND", err, c)
+		return
 	}
+
+	c.JSON(http.StatusOK, u)
 }
 
 // DeleteUser deletes the user by the user identifier.
@@ -73,9 +68,9 @@ func DeleteUser(c *gin.Context) {
 	// Delete the user in the database.
 	if err := store.DeleteUser(c, userID); err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.String(http.StatusNotFound, "The user doesn't exist.")
+			errno.Abort("USER_NOT_FOUND", err, c)
 		} else {
-			c.AbortWithError(http.StatusInternalServerError, err)
+			errno.Abort("DB_ERR", err, c)
 		}
 		return
 	}
@@ -91,34 +86,33 @@ func UpdateUser(c *gin.Context) {
 	// Binding the user data.
 	var u model.User
 	if err := c.Bind(&u); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		errno.Abort("BIND_ERR", err, c)
 		return
 	}
 
 	// We update the record based on the user id.
 	u.ID = userID
-
 	// Validate the data.
 	if err := u.Validate(); err != nil {
-		c.String(http.StatusBadRequest, err.Error())
+		errno.Abort("VALIDATION_ERR", err, c)
 		return
 	}
 	// Parse the json web token.
 	if _, err := token.ParseRequest(c); err != nil {
-		c.String(http.StatusForbidden, "The token was incorrect.")
+		errno.Abort("TOKEN_INVALID", err, c)
 		return
 	}
 	// Encrypt the user password.
 	if err := u.Encrypt(); err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
+		errno.Abort("ENCRYPT_ERR", err, c)
 		return
 	}
 	// Update the user in the database.
 	if err := store.UpdateUser(c, &u); err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.String(http.StatusNotFound, "The user doesn't exist.")
+			errno.Abort("USER_NOT_FOUND", err, c)
 		} else {
-			c.AbortWithError(http.StatusInternalServerError, err)
+			errno.Abort("DB_ERR", err, c)
 		}
 		return
 	}
@@ -132,24 +126,24 @@ func PostToken(c *gin.Context) {
 	// Binding the data with the user struct.
 	var u model.User
 	if err := c.Bind(&u); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		errno.Abort("BIND_ERR", err, c)
 		return
 	}
 	// Get the user information by the login username.
 	d, err := store.GetUser(c, u.Username)
 	if err != nil {
-		c.String(http.StatusNotFound, "The user doesn't exist.")
+		errno.Abort("USER_NOT_FOUND", err, c)
 		return
 	}
 	// Compare the login password with the user password.
 	if err := auth.Compare(d.Password, u.Password); err != nil {
-		c.String(http.StatusForbidden, "The password was incorrect.")
+		errno.Abort("PASSWORD_INCORRECT", err, c)
 		return
 	}
 	// Sign the json web token.
 	t, err := token.Sign(c, token.Context{ID: d.ID, Username: d.Username}, "")
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		errno.Abort("TOKEN_ERR", err, c)
 		return
 	}
 
@@ -172,7 +166,7 @@ func SendMail(c *gin.Context) {
 func UserCreated(c *gin.Context) {
 	var u model.User
 	if err := c.Bind(&u); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		errno.Abort("BIND_ERR", err, c)
 		return
 	}
 }
