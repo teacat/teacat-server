@@ -1,7 +1,6 @@
 package errno
 
 import (
-	"net/http"
 	"os"
 	"runtime"
 	"strings"
@@ -20,13 +19,6 @@ type Err struct {
 func (e *Err) Error() string {
 	return e.Message
 }
-
-var (
-	errs = map[string]*Err{
-		"BIND_ERR": {Message: "Error occurred while binding the request body to the struct.", StatusCode: http.StatusBadRequest},
-	}
-	//ErrBind = &Err{Code: "BIND_ERR", Message: "Error occurred while binding the request body to the struct.", StatusCode: http.StatusBadRequest}
-)
 
 func Error(code string) *Err {
 	if val, ok := errs[code]; ok {
