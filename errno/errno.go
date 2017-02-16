@@ -5,6 +5,8 @@ import (
 	"os"
 	"runtime"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Err struct {
@@ -21,19 +23,26 @@ func (e *Err) Error() string {
 
 var (
 	errs = map[string]*Err{
-		"Bind": {Code: "BIND_ERR", Message: "Error occurred while binding the request body to the struct.", StatusCode: http.StatusBadRequest},
+		"BIND_ERR": {Message: "Error occurred while binding the request body to the struct.", StatusCode: http.StatusBadRequest},
 	}
 	//ErrBind = &Err{Code: "BIND_ERR", Message: "Error occurred while binding the request body to the struct.", StatusCode: http.StatusBadRequest}
 )
 
-func Error(err string) *Err {
-	if val, ok := errs[err]; ok {
+func Error(code string) *Err {
+	if val, ok := errs[code]; ok {
 		_, fn, line, _ := runtime.Caller(1)
 
+		val.Code = code
 		val.Path = strings.Replace(fn, os.Getenv("GOPATH"), "", -1)
 		val.Line = line
 
 		return val
 	}
 	return nil
+}
+
+func Abort(code string, err error, c *gin.Context) {
+	c.Error(err)
+	c.Error(Error(code))
+	c.Abort()
 }

@@ -67,15 +67,6 @@ func Logging() gin.HandlerFunc {
 				default:
 					fields[errorKey] = fmt.Sprintf("%s", v.Err)
 				}
-				// Get the detail from the error meta.
-				//if v.Meta != nil {
-				//	m := v.Meta.(logger.RouteError)
-				//	fields[errorKey] = fmt.Sprintf("%s[%s:%d]", m.Code, m.Path, m.Line)
-				//
-				//	// Otherwise we log the error message only.
-				//} else {
-				//	fields[errorKey] = fmt.Sprintf("%s", v.Err)
-				//}
 			}
 		}
 

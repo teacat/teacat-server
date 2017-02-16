@@ -21,9 +21,9 @@ func CreateUser(c *gin.Context) {
 	var u model.User
 
 	if err := c.Bind(&u); err != nil {
-		//errno.Abort("Bind", err, c)
-		c.Error(errno.Error("Bind"))
-		c.Abort()
+		errno.Abort("BIND_ERR", err, c)
+		//c.Error(errno.Error("BIND_ERR"))
+		//c.Abort()
 		return
 	}
 	// Validate the data.
