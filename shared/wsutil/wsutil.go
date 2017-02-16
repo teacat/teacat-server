@@ -19,13 +19,19 @@ func New(e *gin.Engine) *Engine {
 
 // Handle handles the incoming websocket request with the specified path.
 func (e *Engine) Handle(relativePath string, handler gin.HandlerFunc) {
-	m := melody.New()
-	m.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
+
 	e.Gin.GET(relativePath, func(c *gin.Context) {
+
+		m := melody.New()
+		m.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
+
 		// Put the melody in context.
 		c.Set("websocket", m)
 		handler(c)
+		m.HandleRequest(c.Writer, c.Request)
+
 	})
+
 }
 
 // Get gets the WebSocket connection from the Gin context.

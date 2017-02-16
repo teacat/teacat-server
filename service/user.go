@@ -1,8 +1,10 @@
 package service
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/TeaMeow/KitSvc/errno"
 	"github.com/TeaMeow/KitSvc/model"
@@ -14,6 +16,7 @@ import (
 	"github.com/TeaMeow/KitSvc/store"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	"github.com/olahol/melody"
 )
 
 // CreateUser creates a new user account.
@@ -154,7 +157,17 @@ func PostToken(c *gin.Context) {
 func WatchUser(c *gin.Context) {
 	ws := wsutil.Get(c)
 
-	ws.Broadcast([]byte("Wow"))
+	ws.HandleConnect(func(s *melody.Session) {
+		fmt.Println("Cone")
+		go func() {
+			for {
+				<-time.After(1 * time.Second)
+				fmt.Println("ddd")
+				ws.Broadcast([]byte("Wow"))
+			}
+		}()
+	})
+	fmt.Println("Here")
 }
 
 // SendMail sends the mail to the new user's inbox.
