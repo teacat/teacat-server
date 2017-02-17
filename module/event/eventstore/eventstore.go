@@ -132,7 +132,6 @@ func (es *eventstore) capture(localURL string, e *eventutil.Engine, replayed cha
 
 			// Read the next event.
 			for r.Next() {
-
 				// Error occurred.
 				if r.Err() != nil {
 					switch r.Err().(type) {

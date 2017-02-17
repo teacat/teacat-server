@@ -42,8 +42,10 @@ func CreateUser(c *gin.Context) {
 	}
 	// Publish the `send_mail` message to the message queue.
 	go mq.SendMail(c, &u)
+	//go mq.Send(mq.MsgSendMail, &u)
 	// Send a `user_created` event to Event Store.
 	go event.UserCreated(c, &u)
+	//go event.Send(event.EvtUserCreated, &u)
 
 	// Show the user information.
 	c.JSON(http.StatusOK, u)

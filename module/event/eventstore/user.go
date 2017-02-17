@@ -1,10 +1,13 @@
 package eventstore
 
-import "github.com/TeaMeow/KitSvc/model"
+import (
+	"github.com/TeaMeow/KitSvc/model"
+	"github.com/TeaMeow/KitSvc/version"
+)
 
-// UserCreated handles the `user.created` event.
+// UserCreated handles the `user_created` event.
 func (es *eventstore) UserCreated(u *model.User) error {
-	es.send("user.created", u, map[string]string{})
+	es.send("user_created", u, map[string]string{"node": version.Version})
 
 	return nil
 }

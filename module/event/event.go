@@ -5,6 +5,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var (
+	EvtUserCreated = "user_created"
+	EvtUserDeleted = "user_deleted"
+)
+
 // Event wraps the functions that interactive with the Event Store.
 type Event interface {
 	UserCreated(*model.User) error
