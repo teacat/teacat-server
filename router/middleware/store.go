@@ -21,7 +21,7 @@ func Store(cli *cli.Context) gin.HandlerFunc {
 
 // setupStore is the helper function to create the datastore from the CLI context.
 func setupStore(c *cli.Context) store.Store {
-	return datastore.Open(
+	return datastore.New(
 		c.String("database-driver"),
 		fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=%s&parseTime=%t&loc=%s",
 			c.String("database-user"),
