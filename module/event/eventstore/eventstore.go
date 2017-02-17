@@ -285,8 +285,9 @@ func (es *eventstore) send(stream string, data interface{}, meta interface{}) {
 	}
 }
 
-// UserCreated handles the `user_created` event.
+// Send the event to Event Store.
 func (es *eventstore) Send(e evt.E) {
+	// Fill the metadata if it's empty.
 	if e.Metadata == nil {
 		e.Metadata = map[string]string{
 			"service_version": version.Version,

@@ -262,7 +262,7 @@ func (mq *mqstore) send(topic string, data interface{}) {
 	}
 }
 
-// UserCreated handles the `user_created` event.
+// Publish the message.
 func (mq *mqstore) Publish(m mq.M) {
 	go mq.send(m.Topic, m.Data)
 }

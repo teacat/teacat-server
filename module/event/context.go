@@ -1,6 +1,9 @@
 package event
 
-import "golang.org/x/net/context"
+import (
+	"github.com/gin-gonic/gin"
+	"golang.org/x/net/context"
+)
 
 // Key is the key name of the event in the Gin context.
 const Key = "event"
@@ -19,4 +22,21 @@ func FromContext(c context.Context) Event {
 // the Setter interface.
 func ToContext(c Setter, event Event) {
 	c.Set(Key, event)
+}
+
+// Event wraps the functions that interactive with the Event Store.
+type Event interface {
+	Send(E)
+}
+
+// E represents an event.
+type E struct {
+	Stream   string
+	Data     interface{}
+	Metadata map[string]string
+}
+
+// Send the event to Event Store.
+func Send(c *gin.Context, evt E) {
+	FromContext(c).Send(evt)
 }
