@@ -1,6 +1,8 @@
 package router
 
 import (
+	"net/http"
+
 	"github.com/TeaMeow/KitSvc/module/event"
 	"github.com/TeaMeow/KitSvc/module/metrics"
 	"github.com/TeaMeow/KitSvc/module/mq"
@@ -21,6 +23,10 @@ func Load(g *gin.Engine, e *eventutil.Engine, w *wsutil.Engine, m *mqutil.Engine
 	g.Use(header.Options)
 	g.Use(header.Secure)
 	g.Use(mw...)
+	// 404 Handler.
+	g.NoRoute(func(c *gin.Context) {
+		c.String(http.StatusNotFound, "The incorrect API route.")
+	})
 
 	// The common handlers.
 	user := g.Group("/user")
