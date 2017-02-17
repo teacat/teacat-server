@@ -1,7 +1,9 @@
 package router
 
 import (
+	"github.com/TeaMeow/KitSvc/module/event"
 	"github.com/TeaMeow/KitSvc/module/metrics"
+	"github.com/TeaMeow/KitSvc/module/mq"
 	"github.com/TeaMeow/KitSvc/module/sd"
 	"github.com/TeaMeow/KitSvc/router/middleware/header"
 	"github.com/TeaMeow/KitSvc/service"
@@ -47,10 +49,10 @@ func Load(g *gin.Engine, e *eventutil.Engine, w *wsutil.Engine, m *mqutil.Engine
 	w.Handle("/websocket", service.WatchUser)
 
 	// Message handlers.
-	m.Capture("user", "send_mail", service.SendMail)
+	m.Capture("user", mq.MsgSendMail, service.SendMail)
 
 	// Event handlers.
-	e.Capture("user_created", service.UserCreated)
+	e.Capture(event.EvtUserCreated, service.UserCreated)
 
 	return g
 }
