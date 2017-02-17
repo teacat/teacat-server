@@ -68,6 +68,12 @@ var serverFlags = []cli.Flag{
 
 	// Database flags.
 	cli.StringFlag{
+		EnvVar: "KITSVC_DATABASE_DRIVER",
+		Name:   "database-driver",
+		Usage:  "the driver of the database.",
+		Value:  "mysql",
+	},
+	cli.StringFlag{
 		EnvVar: "KITSVC_DATABASE_NAME",
 		Name:   "database-name",
 		Usage:  "the name of the database.",
