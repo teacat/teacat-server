@@ -9,7 +9,7 @@ var (
 
 // Event wraps the functions that interactive with the Event Store.
 type Event interface {
-	Send(E) error
+	Send(E)
 }
 
 type E struct {
@@ -19,6 +19,6 @@ type E struct {
 }
 
 // UserCreated handles the `user.created` event.
-func Send(c *gin.Context, evt E) error {
-	return FromContext(c).Send(evt)
+func Send(c *gin.Context, evt E) {
+	FromContext(c).Send(evt)
 }

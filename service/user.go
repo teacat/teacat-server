@@ -8,6 +8,7 @@ import (
 	"github.com/TeaMeow/KitSvc/errno"
 	"github.com/TeaMeow/KitSvc/model"
 	"github.com/TeaMeow/KitSvc/module/event"
+	"github.com/TeaMeow/KitSvc/module/mq"
 	"github.com/TeaMeow/KitSvc/shared/auth"
 	"github.com/TeaMeow/KitSvc/shared/token"
 	"github.com/TeaMeow/KitSvc/shared/wsutil"
@@ -40,17 +41,15 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 	// Publish the `send_mail` message to the message queue.
-	//go mq.Publish(c, mq.M{
-	//	Topic: mq.MsgSendMail,
-	//	Data: &u,
-	//})
-
-	// Send a `user_created` event to Event Store.
-	go event.Send(c, event.E{
+	mq.Publish(c, mq.M{
+		Topic: mq.MsgSendMail,
+		Data:  &u,
+	})
+	// Send the `user_created` event to Event Store.
+	event.Send(c, event.E{
 		Stream: event.EvtUserCreated,
 		Data:   &u,
 	})
-
 	// Show the user information.
 	c.JSON(http.StatusOK, u)
 }

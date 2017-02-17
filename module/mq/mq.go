@@ -1,15 +1,22 @@
 package mq
 
-import (
-	"github.com/TeaMeow/KitSvc/model"
-	"github.com/gin-gonic/gin"
+import "github.com/gin-gonic/gin"
+
+var (
+	MsgSendMail = "send_mail"
 )
 
 // MQ wraps the functions that interactive with the message queue.
 type MQ interface {
-	SendMail(*model.User) error
+	Publish(M)
 }
 
-func SendMail(c *gin.Context, user *model.User) error {
-	return FromContext(c).SendMail(user)
+type M struct {
+	Topic string
+	Data  interface{}
+}
+
+// UserCreated handles the `user.created` event.
+func Publish(c *gin.Context, m M) {
+	FromContext(c).Publish(m)
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/TeaMeow/KitSvc/module/logger"
+	"github.com/TeaMeow/KitSvc/module/mq"
 	"github.com/TeaMeow/KitSvc/shared/mqutil"
 	nsq "github.com/bitly/go-nsq"
 	"github.com/parnurzeal/gorequest"
@@ -215,7 +216,7 @@ func (mq *mqstore) push(prodHTTP string) {
 			// Wait a little bit for another event.
 			<-time.After(time.Millisecond * 2)
 			// Append the message in the topic.
-			err := mq.Publish(m.topic, m.body)
+			err := mq.Producer.Publish(m.topic, m.body)
 			if err != nil {
 				continue
 			}
@@ -240,7 +241,7 @@ func (mq *mqstore) send(topic string, data interface{}) {
 	SentTotal++
 
 	// Send the message to the remote message queue.
-	if err := mq.Publish(topic, body); err != nil {
+	if err := mq.Producer.Publish(topic, body); err != nil {
 		switch t := err.(type) {
 		case *net.OpError:
 			// Push the message to the local queue if connecting refused.
@@ -259,4 +260,9 @@ func (mq *mqstore) send(topic string, data interface{}) {
 			}
 		}
 	}
+}
+
+// UserCreated handles the `user_created` event.
+func (mq *mqstore) Publish(m mq.M) {
+	go mq.send(m.Topic, m.Data)
 }
