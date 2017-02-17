@@ -197,7 +197,7 @@ func (mq *mqstore) push(prodHTTP string) {
 				mq.isConnected = true
 				AllConnected = true
 
-				logger.InfoFields("NSQ producer is back online, there are %d unsent messages that will begin to send.", logrus.Fields{
+				logger.InfoFields("NSQ producer is back online, the unsent messages that will begin to send.", logrus.Fields{
 					"unsent": len(mq.queue),
 				})
 			}
