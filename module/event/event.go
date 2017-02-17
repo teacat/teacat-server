@@ -1,9 +1,6 @@
 package event
 
-import (
-	"github.com/TeaMeow/KitSvc/model"
-	"github.com/gin-gonic/gin"
-)
+import "github.com/gin-gonic/gin"
 
 var (
 	EvtUserCreated = "user_created"
@@ -12,10 +9,16 @@ var (
 
 // Event wraps the functions that interactive with the Event Store.
 type Event interface {
-	UserCreated(*model.User) error
+	Send(E) error
+}
+
+type E struct {
+	Stream   string
+	Data     interface{}
+	Metadata map[string]string
 }
 
 // UserCreated handles the `user.created` event.
-func UserCreated(c *gin.Context, user *model.User) error {
-	return FromContext(c).UserCreated(user)
+func Send(c *gin.Context, evt E) error {
+	return FromContext(c).Send(evt)
 }

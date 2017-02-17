@@ -8,8 +8,11 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	evt "github.com/TeaMeow/KitSvc/module/event"
 	"github.com/TeaMeow/KitSvc/module/logger"
+	"github.com/TeaMeow/KitSvc/module/sd"
 	"github.com/TeaMeow/KitSvc/shared/eventutil"
+	"github.com/TeaMeow/KitSvc/version"
 	"github.com/jetbasrawi/go.geteventstore"
 	"github.com/parnurzeal/gorequest"
 )
@@ -280,4 +283,18 @@ func (es *eventstore) send(stream string, data interface{}, meta interface{}) {
 			"unsent": len(es.queue),
 		})
 	}
+}
+
+// UserCreated handles the `user_created` event.
+func (es *eventstore) Send(e evt.E) error {
+	if e.Metadata == nil {
+		e.Metadata = map[string]string{
+			"service_version": version.Version,
+			"service_id":      sd.ID,
+			"service_tags":    sd.Tags,
+		}
+	}
+
+	es.send(e.Stream, e.Data, e.Metadata)
+	return nil
 }
