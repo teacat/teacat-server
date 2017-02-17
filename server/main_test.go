@@ -47,9 +47,9 @@ func TestPostUser(t *testing.T) {
 		Username: "admin",
 		Password: "testtest",
 	})
-	assert.Equal(err, nil)
+	assert.True(err == nil)
 	err = u.Compare("testtest")
-	assert.Equal(err, nil)
+	assert.True(err == nil)
 }
 
 func TestGetUser(t *testing.T) {
@@ -69,10 +69,10 @@ func TestPostToken(t *testing.T) {
 		Username: "admin",
 		Password: "testtest",
 	})
-	assert.Equal(err, nil)
+	assert.True(err == nil)
 
 	ctx, err := token.Parse(tkn.Token, "4Rtg8BPKwixXy2ktDPxoMMAhRzmo9mmuZjvKONGPZZQSaJWNLijxR42qRgq0iBb5")
-	assert.Equal(err, nil)
+	assert.True(err == nil)
 	assert.Equal(&token.Context{
 		ID:       1,
 		Username: "admin",
@@ -88,7 +88,7 @@ func TestPutUser(t *testing.T) {
 		Username: "admin",
 		Password: "newpassword",
 	})
-	assert.Equal(err, nil)
+	assert.True(err == nil)
 
 	err = u.Compare("newpassword")
 	assert.True(err == nil, "They should be match.")
@@ -98,9 +98,9 @@ func TestDeleteUser(t *testing.T) {
 	assert := assert.New(t)
 
 	err := ct.DeleteUser(1)
-	assert.Equal(err, nil)
+	assert.True(err == nil)
 
 	u, err := c.GetUser("admin")
-	assert.Equal(err, nil)
+	assert.True(err == nil)
 	assert.Empty(u)
 }
