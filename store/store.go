@@ -10,6 +10,8 @@ import (
 type Store interface {
 	CreateUser(*model.User) error
 	GetUser(string) (*model.User, error)
+	GetLastUser() (*model.User, error)
+	GetUserAfter(int) (*model.User, error)
 	DeleteUser(int) error
 	UpdateUser(*model.User) error
 }
@@ -22,6 +24,16 @@ func CreateUser(c *gin.Context, user *model.User) error {
 // GetUser gets an user by the user identifier.
 func GetUser(c *gin.Context, username string) (*model.User, error) {
 	return FromContext(c).GetUser(username)
+}
+
+// GetLastUser gets the last user.
+func GetLastUser(c *gin.Context) (*model.User, error) {
+	return FromContext(c).GetLastUser()
+}
+
+// GetUserAfter gets the user who is registered after the specified user.
+func GetUserAfter(c *gin.Context, id int) (*model.User, error) {
+	return FromContext(c).GetUserAfter(id)
 }
 
 // DeleteUser deletes the user by the user identifier.
