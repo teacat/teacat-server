@@ -94,6 +94,12 @@
 			"revisionTime": "2016-11-17T03:31:26Z"
 		},
 		{
+			"checksumSHA1": "p3IB18uJRs4dL2K5yx24MrLYE9A=",
+			"path": "github.com/google/go-querystring/query",
+			"revision": "53e6ce116135b80d037921a7fdd5138cf32d7a8a",
+			"revisionTime": "2017-01-11T10:11:55Z"
+		},
+		{
 			"checksumSHA1": "++qMWbJ7ptiXehuLTFtEDGGnwpM=",
 			"path": "github.com/gorilla/websocket",
 			"revision": "c36f2fe5c330f0ac404b616b96c438b8616b1aaf",
@@ -154,6 +160,12 @@
 			"path": "github.com/jinzhu/inflection",
 			"revision": "74387dc39a75e970e7a3ae6a3386b5bd2e5c5cff",
 			"revisionTime": "2016-08-17T01:46:01Z"
+		},
+		{
+			"checksumSHA1": "vymM+UbxYTqu/Q6sT2ZaJ6Ngbq0=",
+			"path": "github.com/levigross/grequests",
+			"revision": "11cb66b6bb0013e7619c6484693c5a8a1b9cd158",
+			"revisionTime": "2017-02-09T18:32:00Z"
 		},
 		{
 			"checksumSHA1": "b0T0Hzd+zYk+OCDTFMps+jwa/nY=",

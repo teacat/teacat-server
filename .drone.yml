@@ -18,12 +18,6 @@ pipeline:
     commands:
       - make deps test test_mysql test_sqlite
 
-  #slack:
-  #  image: plugins/slack
-  #  webhook_url: ${SLACK_TOKEN}
-  #  channel: builds
-  #  username: drone
-
 #
 services:
   eventstore:
@@ -46,4 +40,3 @@ matrix:
   GO_VERSION:
     - 1.8
     - 1.7
-    - 1.6

@@ -29,7 +29,7 @@ func TestCreateUser(t *testing.T) {
 	}
 	err := s.CreateUser(&u)
 
-	assert.True(err == nil)
+	assert.Equal(err, nil)
 	assert.True(u.ID != 0)
 }
 
@@ -43,7 +43,7 @@ func TestGetUser(t *testing.T) {
 
 	s.CreateUser(&u)
 	getuser, err := s.GetUser("YamiOdymel")
-	assert.True(err == nil)
+	assert.Equal(err, nil)
 	assert.Equal(u.ID, getuser.ID)
 	assert.Equal(u.Username, getuser.Username)
 	// Test database functions only, so the password is plain text.
@@ -60,7 +60,7 @@ func TestGetLastUser(t *testing.T) {
 
 	s.CreateUser(&u)
 	lastuser, err := s.GetLastUser()
-	assert.True(err == nil)
+	assert.Equal(err, nil)
 	assert.Equal(u.ID, lastuser.ID)
 	assert.Equal(u.Username, lastuser.Username)
 	assert.Equal(u.Password, lastuser.Password)
@@ -81,7 +81,7 @@ func TestGetUserAfter(t *testing.T) {
 	s.CreateUser(&u)
 	s.CreateUser(&u2)
 	afteruser, err := s.GetUserAfter(u.ID)
-	assert.True(err == nil)
+	assert.Equal(err, nil)
 	assert.Equal(u2.ID, afteruser.ID)
 	assert.Equal(u2.Username, afteruser.Username)
 	assert.Equal(u2.Password, afteruser.Password)
@@ -97,9 +97,9 @@ func TestDeleteUser(t *testing.T) {
 
 	s.CreateUser(&u)
 	err := s.DeleteUser(u.ID)
-	assert.True(err == nil)
+	assert.Equal(err, nil)
 	getuser, err := s.GetUser("YamiOdymel")
-	assert.True(err != nil)
+	assert.Equal(err, nil)
 	assert.Equal((&model.User{}), getuser)
 }
 
@@ -114,9 +114,9 @@ func TestUpdateUser(t *testing.T) {
 	u.Username = "Akaria"
 	u.Password = "adminadmin"
 	err := s.UpdateUser(&u)
-	assert.True(err == nil)
+	assert.Equal(err, nil)
 	getuser, err := s.GetUser("Akaria")
-	assert.True(err == nil)
+	assert.Equal(err, nil)
 	assert.Equal(u.ID, getuser.ID)
 	assert.Equal(u.Username, getuser.Username)
 	assert.Equal(u.Password, getuser.Password)
