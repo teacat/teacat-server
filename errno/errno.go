@@ -22,24 +22,19 @@ func (e *Err) Error() string {
 	return e.Message
 }
 
-// Error returns the error struct by the error code.
-func Error(code string) *Err {
-	if val, ok := errs[code]; ok {
-		_, fn, line, _ := runtime.Caller(1)
+// Fill the error struct with the detail error information.
+func Fill(err *Err) *Err {
+	_, fn, line, _ := runtime.Caller(1)
 
-		// Fill the error occurred path, line, code.
-		val.Code = code
-		val.Path = strings.Replace(fn, os.Getenv("GOPATH"), "", -1)
-		val.Line = line
-
-		return val
-	}
-	return nil
+	// Fill the error occurred path, line, code.
+	err.Path = strings.Replace(fn, os.Getenv("GOPATH"), "", -1)
+	err.Line = line
+	return err
 }
 
 // Abort the current request with the specified error code.
-func Abort(code string, err error, c *gin.Context) {
+func Abort(errStruct *Err, err error, c *gin.Context) {
 	c.Error(err)
-	c.Error(Error(code))
+	c.Error(Fill(errStruct))
 	c.Abort()
 }

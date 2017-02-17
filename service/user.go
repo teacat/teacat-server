@@ -22,22 +22,22 @@ import (
 func CreateUser(c *gin.Context) {
 	var u model.User
 	if err := c.Bind(&u); err != nil {
-		errno.Abort("BIND_ERR", err, c)
+		errno.Abort(errno.ErrBind, err, c)
 		return
 	}
 	// Validate the data.
 	if err := u.Validate(); err != nil {
-		errno.Abort("VALIDATION_ERR", err, c)
+		errno.Abort(errno.ErrValidation, err, c)
 		return
 	}
 	// Encrypt the user password.
 	if err := u.Encrypt(); err != nil {
-		errno.Abort("ENCRYPT_ERR", err, c)
+		errno.Abort(errno.ErrEncrypt, err, c)
 		return
 	}
 	// Insert the user to the database.
 	if err := store.CreateUser(c, &u); err != nil {
-		errno.Abort("DB_ERR", err, c)
+		errno.Abort(errno.ErrDatabase, err, c)
 		return
 	}
 	// Publish the `send_mail` message to the message queue.
@@ -61,7 +61,7 @@ func GetUser(c *gin.Context) {
 	// Get the user by the `username` from the database.
 	u, err := store.GetUser(c, username)
 	if err != nil {
-		errno.Abort("USER_NOT_FOUND", err, c)
+		errno.Abort(errno.ErrUserNotFound, err, c)
 		return
 	}
 
@@ -75,9 +75,9 @@ func DeleteUser(c *gin.Context) {
 	// Delete the user in the database.
 	if err := store.DeleteUser(c, userID); err != nil {
 		if err == gorm.ErrRecordNotFound {
-			errno.Abort("USER_NOT_FOUND", err, c)
+			errno.Abort(errno.ErrUserNotFound, err, c)
 		} else {
-			errno.Abort("DB_ERR", err, c)
+			errno.Abort(errno.ErrDatabase, err, c)
 		}
 		return
 	}
@@ -93,7 +93,7 @@ func UpdateUser(c *gin.Context) {
 	// Binding the user data.
 	var u model.User
 	if err := c.Bind(&u); err != nil {
-		errno.Abort("BIND_ERR", err, c)
+		errno.Abort(errno.ErrBind, err, c)
 		return
 	}
 
@@ -101,25 +101,25 @@ func UpdateUser(c *gin.Context) {
 	u.ID = userID
 	// Validate the data.
 	if err := u.Validate(); err != nil {
-		errno.Abort("VALIDATION_ERR", err, c)
+		errno.Abort(errno.ErrValidation, err, c)
 		return
 	}
 	// Parse the json web token.
 	if _, err := token.ParseRequest(c); err != nil {
-		errno.Abort("TOKEN_INVALID", err, c)
+		errno.Abort(errno.ErrTokenInvalid, err, c)
 		return
 	}
 	// Encrypt the user password.
 	if err := u.Encrypt(); err != nil {
-		errno.Abort("ENCRYPT_ERR", err, c)
+		errno.Abort(errno.ErrEncrypt, err, c)
 		return
 	}
 	// Update the user in the database.
 	if err := store.UpdateUser(c, &u); err != nil {
 		if err == gorm.ErrRecordNotFound {
-			errno.Abort("USER_NOT_FOUND", err, c)
+			errno.Abort(errno.ErrUserNotFound, err, c)
 		} else {
-			errno.Abort("DB_ERR", err, c)
+			errno.Abort(errno.ErrDatabase, err, c)
 		}
 		return
 	}
@@ -133,24 +133,24 @@ func PostToken(c *gin.Context) {
 	// Binding the data with the user struct.
 	var u model.User
 	if err := c.Bind(&u); err != nil {
-		errno.Abort("BIND_ERR", err, c)
+		errno.Abort(errno.ErrBind, err, c)
 		return
 	}
 	// Get the user information by the login username.
 	d, err := store.GetUser(c, u.Username)
 	if err != nil {
-		errno.Abort("USER_NOT_FOUND", err, c)
+		errno.Abort(errno.ErrUserNotFound, err, c)
 		return
 	}
 	// Compare the login password with the user password.
 	if err := auth.Compare(d.Password, u.Password); err != nil {
-		errno.Abort("PASSWORD_INCORRECT", err, c)
+		errno.Abort(errno.ErrPasswordIncorrect, err, c)
 		return
 	}
 	// Sign the json web token.
 	t, err := token.Sign(c, token.Context{ID: d.ID, Username: d.Username}, "")
 	if err != nil {
-		errno.Abort("TOKEN_ERR", err, c)
+		errno.Abort(errno.ErrToken, err, c)
 		return
 	}
 
@@ -193,7 +193,7 @@ func SendMail(c *gin.Context) {
 func UserCreated(c *gin.Context) {
 	var u model.User
 	if err := c.Bind(&u); err != nil {
-		errno.Abort("BIND_ERR", err, c)
+		errno.Abort(errno.ErrBind, err, c)
 		return
 	}
 }
