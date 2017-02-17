@@ -13,6 +13,13 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+var (
+	// ID represents the unique identifier of the service.
+	ID string
+	// Tags represents the tags of the service (separated by the commas, ex: `a, b, c`).
+	Tags string
+)
+
 // newClient creates a new Consul api client.
 func newClient(c *cli.Context) *api.Client {
 	apiConfig := api.DefaultConfig()
@@ -29,14 +36,14 @@ func newClient(c *cli.Context) *api.Client {
 func Register(c *cli.Context) {
 	client := newClient(c)
 	// Create a random id.
-	id := uuid.NewV4().String()
+	ID = uuid.NewV4().String()
 	// Append the service version in the consul tags.
 	tags := c.StringSlice("consul-tags")
 	tags = append(tags, version.Version)
 
 	// The service information.
 	info := &api.AgentServiceRegistration{
-		ID:   id,
+		ID:   ID,
 		Name: c.String("name"),
 		Port: c.Int("port"),
 		Tags: tags,
@@ -47,22 +54,23 @@ func Register(c *cli.Context) {
 			"err": err,
 		})
 	}
+	Tags = strings.Join(tags, ", ")
 	logger.InfoFields("The service has been registered to the Consul successfully.", logrus.Fields{
-		"id":   id,
-		"tags": strings.Join(tags, ", "),
+		"id":   ID,
+		"tags": Tags,
 	})
 	// Register the health check handlers.
-	registerChecks(c, client, id)
+	registerChecks(c, client)
 	// Deregister the service when exiting the program.
-	deregister(client, id)
+	deregister(client)
 }
 
 // registerChecks register the health check handlers to the service registry.
-func registerChecks(c *cli.Context, client *api.Client, id string) {
+func registerChecks(c *cli.Context, client *api.Client) {
 	checks := []*api.AgentCheckRegistration{
 		{
 			Name:      "Service Router",
-			ServiceID: id,
+			ServiceID: ID,
 			AgentServiceCheck: api.AgentServiceCheck{
 				HTTP:     c.String("url") + "/sd/health",
 				Interval: c.String("consul-check_interval"),
@@ -72,7 +80,7 @@ func registerChecks(c *cli.Context, client *api.Client, id string) {
 		{
 			Name:      "Disk Usage",
 			Notes:     "Critical 5%, warning 10% free",
-			ServiceID: id,
+			ServiceID: ID,
 			AgentServiceCheck: api.AgentServiceCheck{
 				HTTP:     c.String("url") + "/sd/disk",
 				Interval: c.String("consul-check_interval"),
@@ -82,7 +90,7 @@ func registerChecks(c *cli.Context, client *api.Client, id string) {
 		{
 			Name:      "Load Average",
 			Notes:     "Critical load average 2, warning load average 1",
-			ServiceID: id,
+			ServiceID: ID,
 			AgentServiceCheck: api.AgentServiceCheck{
 				HTTP:     c.String("url") + "/sd/cpu",
 				Interval: c.String("consul-check_interval"),
@@ -92,7 +100,7 @@ func registerChecks(c *cli.Context, client *api.Client, id string) {
 		{
 			Name:      "RAM Usage",
 			Notes:     "Critical 5%, warning 10% free",
-			ServiceID: id,
+			ServiceID: ID,
 			AgentServiceCheck: api.AgentServiceCheck{
 				HTTP:     c.String("url") + "/sd/ram",
 				Interval: c.String("consul-check_interval"),
@@ -107,21 +115,21 @@ func registerChecks(c *cli.Context, client *api.Client, id string) {
 
 // deregister watching the system signal, deregister the service from the service registry
 // when the exit signal was captured.
-func deregister(client *api.Client, id string) {
+func deregister(client *api.Client) {
 	// Capture the program exit signal.
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
 
 	go func() {
 		for range ch {
-			if err := client.Agent().ServiceDeregister(id); err != nil {
+			if err := client.Agent().ServiceDeregister(ID); err != nil {
 				logger.FatalFields("Cannot deregister the service from the service registry.", logrus.Fields{
 					"err": err,
-					"id":  id,
+					"id":  ID,
 				})
 			} else {
 				logger.InfoFields("The service has been deregistered from the service registry successfully.", logrus.Fields{
-					"id": id,
+					"id": ID,
 				})
 			}
 			os.Exit(1)
