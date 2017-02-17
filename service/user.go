@@ -166,7 +166,7 @@ func WatchUser(c *gin.Context) {
 		go func() {
 			// Get the identifier of the last user.
 			l, _ := store.GetLastUser(c)
-
+			// Keep watching the user changes.
 			for {
 				// Slow and steady, otherwise the database will boomed.
 				<-time.After(100 * time.Millisecond)
