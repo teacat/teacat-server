@@ -16,8 +16,7 @@ pipeline:
     environment:
       - GOPATH=/drone
     commands:
-      - make deps test
-      # - make test_mysql
+      - make deps test test_mysql test_sqlite
 
   #slack:
   #  image: plugins/slack
