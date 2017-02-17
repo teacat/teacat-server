@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -155,19 +154,29 @@ func PostToken(c *gin.Context) {
 
 // WatchUser watches the user changes, and broadcast when there's a new user.
 func WatchUser(c *gin.Context) {
+	// Get the WebSocket from the Gin context.
 	ws := wsutil.Get(c)
 
 	ws.HandleConnect(func(s *melody.Session) {
-		fmt.Println("Cone")
 		go func() {
+			// Get the identifier of the last user.
+			l, _ := store.GetLastUser(c)
+
 			for {
-				<-time.After(1 * time.Second)
-				fmt.Println("ddd")
-				ws.Broadcast([]byte("Wow"))
+				// Slow and steady, otherwise the database will boomed.
+				<-time.After(100 * time.Millisecond)
+				// Get the new user who is registered after the specified user.
+				u, err := store.GetUserAfter(c, l.ID)
+				if err != nil {
+					continue
+				}
+				// Boardcast the lastest username.
+				ws.Broadcast([]byte(u.Username))
+
+				l.ID++
 			}
 		}()
 	})
-	fmt.Println("Here")
 }
 
 // SendMail sends the mail to the new user's inbox.
