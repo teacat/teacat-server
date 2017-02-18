@@ -57,7 +57,7 @@ var serverFlags = []cli.Flag{
 	cli.IntFlag{
 		EnvVar: "KITSVC_MAX_PING_COUNT",
 		Name:   "max-ping-count",
-		Usage:  "",
+		Usage:  "the amount to ping the server before we give up.",
 		Value:  20,
 	},
 	cli.StringFlag{
