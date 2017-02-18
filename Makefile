@@ -15,3 +15,6 @@ test_mysql:
 run:
 	go build -o ./bin/main ./server
 	./bin/main
+
+build:
+	go build -o ./bin/main ./server
