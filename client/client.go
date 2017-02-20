@@ -1,6 +1,6 @@
 package client
 
-import "../model"
+import "github.com/TeaMeow/KitSvc/model"
 
 // Client is used to communicate with the service.
 type Client interface {

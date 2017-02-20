@@ -1,7 +1,7 @@
 package model
 
 import (
-	"../shared/auth"
+	"github.com/TeaMeow/KitSvc/shared/auth"
 	validator "gopkg.in/go-playground/validator.v9"
 )
 

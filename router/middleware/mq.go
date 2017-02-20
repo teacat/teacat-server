@@ -1,9 +1,9 @@
 package middleware
 
 import (
-	"../../module/mq"
-	"../../module/mq/mqstore"
-	"../../shared/mqutil"
+	"github.com/TeaMeow/KitSvc/module/mq"
+	"github.com/TeaMeow/KitSvc/module/mq/mqstore"
+	"github.com/TeaMeow/KitSvc/shared/mqutil"
 	"github.com/codegangsta/cli"
 	"github.com/gin-gonic/gin"
 )

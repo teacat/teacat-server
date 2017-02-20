@@ -1,6 +1,6 @@
 package datastore
 
-import "../../model"
+import "github.com/TeaMeow/KitSvc/model"
 
 // CreateUser creates a new user account.
 func (db *datastore) CreateUser(u *model.User) error {

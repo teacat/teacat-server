@@ -9,10 +9,10 @@ import (
 	"os/exec"
 	"time"
 
-	"../"
-	"../../../shared/mqutil"
-	"../../logger"
 	"github.com/Sirupsen/logrus"
+	"github.com/TeaMeow/KitSvc/module/logger"
+	"github.com/TeaMeow/KitSvc/module/mq"
+	"github.com/TeaMeow/KitSvc/shared/mqutil"
 	nsq "github.com/bitly/go-nsq"
 	"github.com/parnurzeal/gorequest"
 )

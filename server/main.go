@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"../version"
+	"github.com/TeaMeow/KitSvc/version"
 	"github.com/codegangsta/cli"
 )
 

@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"../event/eventstore"
-	"../logger"
-	"../mq/mqstore"
 	"github.com/Sirupsen/logrus"
+	"github.com/TeaMeow/KitSvc/module/event/eventstore"
+	"github.com/TeaMeow/KitSvc/module/logger"
+	"github.com/TeaMeow/KitSvc/module/mq/mqstore"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

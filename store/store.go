@@ -1,7 +1,7 @@
 package store
 
 import (
-	"../model"
+	"github.com/TeaMeow/KitSvc/model"
 	"github.com/gin-gonic/gin"
 )
 

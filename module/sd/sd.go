@@ -5,9 +5,9 @@ import (
 	"os/signal"
 	"strings"
 
-	"../../version"
-	"../logger"
 	"github.com/Sirupsen/logrus"
+	"github.com/TeaMeow/KitSvc/module/logger"
+	"github.com/TeaMeow/KitSvc/version"
 	"github.com/codegangsta/cli"
 	"github.com/hashicorp/consul/api"
 	"github.com/satori/go.uuid"

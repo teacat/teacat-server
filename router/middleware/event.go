@@ -1,9 +1,9 @@
 package middleware
 
 import (
-	"../../module/event"
-	"../../module/event/eventstore"
-	"../../shared/eventutil"
+	"github.com/TeaMeow/KitSvc/module/event"
+	"github.com/TeaMeow/KitSvc/module/event/eventstore"
+	"github.com/TeaMeow/KitSvc/shared/eventutil"
 	"github.com/codegangsta/cli"
 	"github.com/gin-gonic/gin"
 )
