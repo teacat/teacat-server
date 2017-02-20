@@ -13,8 +13,8 @@ pipeline:
 
   build:
     image: golang:${GO_VERSION}
-    environment:
-      - GOPATH=/drone
+    #environment:
+    #  - GOPATH=/drone
     commands:
       - make deps test test_mysql test_sqlite
 
