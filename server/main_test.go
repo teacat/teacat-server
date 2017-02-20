@@ -4,11 +4,11 @@ import (
 	"os"
 	"testing"
 
+	"../client"
+	"../model"
+	"../shared/token"
+	"../version"
 	"github.com/Sirupsen/logrus"
-	"github.com/TeaMeow/KitSvc/client"
-	"github.com/TeaMeow/KitSvc/model"
-	"github.com/TeaMeow/KitSvc/shared/token"
-	"github.com/TeaMeow/KitSvc/version"
 	"github.com/codegangsta/cli"
 	"github.com/stretchr/testify/assert"
 )

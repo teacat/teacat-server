@@ -3,8 +3,8 @@ package middleware
 import (
 	"fmt"
 
-	"github.com/TeaMeow/KitSvc/store"
-	"github.com/TeaMeow/KitSvc/store/datastore"
+	"../../store"
+	"../../store/datastore"
 	"github.com/codegangsta/cli"
 	"github.com/gin-gonic/gin"
 )

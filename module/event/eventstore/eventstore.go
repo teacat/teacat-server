@@ -7,12 +7,12 @@ import (
 	"net/url"
 	"time"
 
+	"../../../shared/eventutil"
+	"../../../version"
+	evt "../../event"
+	"../../logger"
+	"../../sd"
 	"github.com/Sirupsen/logrus"
-	evt "github.com/TeaMeow/KitSvc/module/event"
-	"github.com/TeaMeow/KitSvc/module/logger"
-	"github.com/TeaMeow/KitSvc/module/sd"
-	"github.com/TeaMeow/KitSvc/shared/eventutil"
-	"github.com/TeaMeow/KitSvc/version"
 	"github.com/jetbasrawi/go.geteventstore"
 	"github.com/parnurzeal/gorequest"
 )

@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/TeaMeow/KitSvc/module/metrics"
+	"../../module/metrics"
 	"github.com/gin-gonic/gin"
 )
 

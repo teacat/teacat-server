@@ -3,10 +3,10 @@ package datastore
 import (
 	"os"
 
+	"../../model"
+	"../../module/logger"
+	"../../store"
 	"github.com/Sirupsen/logrus"
-	"github.com/TeaMeow/KitSvc/model"
-	"github.com/TeaMeow/KitSvc/module/logger"
-	"github.com/TeaMeow/KitSvc/store"
 	// MySQL driver.
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"

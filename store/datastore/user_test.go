@@ -3,8 +3,8 @@ package datastore
 import (
 	"testing"
 
-	"github.com/TeaMeow/KitSvc/model"
-	"github.com/TeaMeow/KitSvc/store"
+	"../../model"
+	"../store"
 	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/assert"
 )

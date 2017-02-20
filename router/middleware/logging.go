@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"../../errno"
+	"../../module/logger"
 	"github.com/Sirupsen/logrus"
-	"github.com/TeaMeow/KitSvc/errno"
-	"github.com/TeaMeow/KitSvc/module/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/willf/pad"
 )

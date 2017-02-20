@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/TeaMeow/KitSvc/model"
+	"../model"
 	"github.com/levigross/grequests"
 )
 

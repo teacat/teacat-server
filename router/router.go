@@ -3,15 +3,15 @@ package router
 import (
 	"net/http"
 
-	"github.com/TeaMeow/KitSvc/module/event"
-	"github.com/TeaMeow/KitSvc/module/metrics"
-	"github.com/TeaMeow/KitSvc/module/mq"
-	"github.com/TeaMeow/KitSvc/module/sd"
-	"github.com/TeaMeow/KitSvc/router/middleware/header"
-	"github.com/TeaMeow/KitSvc/service"
-	"github.com/TeaMeow/KitSvc/shared/eventutil"
-	"github.com/TeaMeow/KitSvc/shared/mqutil"
-	"github.com/TeaMeow/KitSvc/shared/wsutil"
+	"../module/event"
+	"../module/metrics"
+	"../module/mq"
+	"../module/sd"
+	"../service"
+	"../shared/eventutil"
+	"../shared/mqutil"
+	"../shared/wsutil"
+	"./middleware/header"
 	"github.com/gin-gonic/gin"
 )
 

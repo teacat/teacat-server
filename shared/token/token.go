@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/TeaMeow/KitSvc/router/middleware"
+	"../../router/middleware"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 )
